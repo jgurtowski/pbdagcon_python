@@ -132,6 +132,54 @@ def get_consensus(read_fn, init_ref, consensus_fn, consens_seq_name,
             print >>f, ">"+consens_seq_name
             print >>f, s.upper()
 
+        return g
+
+
+def output_dag_info(aln_graph, out_file_name):
+
+    with open(out_file_name,"w") as f:
+        read_ids = set()
+        for n_id in aln_graph.nodes:
+            n = aln_graph.nodes[n_id]
+            for r in n.info:
+                read_ids.add(r)
+
+
+        read_id_to_pos = dict(( (x[1],x[0]) for x in enumerate(list(read_ids))) )
+        for read_id, pileup_pos in read_id_to_pos.items():
+            print >>f, "\t".join( [ "R", "%d" % pileup_pos, read_id ] )
+
+        backbone_node_to_pos =  aln_graph.backbone_node_to_pos 
+        ne, hne = aln_graph.get_high_entropy_nodes(coverage_th=0)
+        node_to_entropy = dict( [ (v[1],v[2]) for v in ne ] ) 
+
+        data = []
+        consensus_pos = 0
+        for n in sorted_nodes(aln_graph):
+            s = ["."] * len(read_id_to_pos)
+            for r in n.info:
+                s[read_id_to_pos[r]] = n.base
+
+            if n.base not in ["B", "E"]:
+                bpos = backbone_node_to_pos[n.backbone_node]
+            entropy_th = 0
+            ent = node_to_entropy[n] if n in node_to_entropy else 0
+            if n.base not in ["B","E"] and ent >= entropy_th:
+                data.append ( ( n.ID, consensus_pos, backbone_node_to_pos[n.backbone_node],\
+                      "+" if n in aln_graph.consensus_path else "-",\
+                      "+" if n.is_backbone == True else "-",\
+                      n.base, "".join(s), len(n.info),\
+                      n.backbone_node.coverage,\
+                      node_to_entropy[n] if n in node_to_entropy else "-" ) )
+                if n in aln_graph.consensus_path:
+                    consensus_pos += 1
+
+        for l in data:
+            print >>f, "N"+"\t"+"\t".join([str(c) for c in l])
+
+        for e_id in aln_graph.edges:
+            e = aln_graph.edges[e_id]
+            print >> f, "\t".join( ["E", "%d" % e_id, "%d" % e.in_node.ID, "%d" % e.out_node.ID, "%d" % e.count ] )
 
 def generate_consensus(input_fasta_name, 
                        ref_fasta_name, 
@@ -140,19 +188,21 @@ def generate_consensus(input_fasta_name,
                        hpFix, 
                        min_iteration,
                        max_num_reads,
-                       entropy_th):
+                       entropy_th,
+                       dump_dag_info):
 
     normalize_fasta(input_fasta_name, ref_fasta_name, "%s_input.fa" % prefix)
 
-    get_consensus("%s_input.fa" % prefix, 
-                  ref_fasta_name, 
-                  "%s.fa" % prefix, 
-                  consensus_name,
-                  hp_correction = hpFix,
-                  min_iteration = min_iteration,
-                  max_num_reads = max_num_reads,
-                  entropy_th = entropy_th)
-
+    g = get_consensus("%s_input.fa" % prefix, 
+                      ref_fasta_name, 
+                      "%s.fa" % prefix, 
+                      consensus_name,
+                      hp_correction = hpFix,
+                      min_iteration = min_iteration,
+                      max_num_reads = max_num_reads,
+                      entropy_th = entropy_th)
+    if dump_dag_info == True:
+        output_dag_info(g, "%s_dag.dat" % prefix)
 
 class Consensus(PBMultiToolRunner):
 
@@ -182,9 +232,9 @@ class Consensus(PBMultiToolRunner):
                               help = 'a reference fasta file')
 
         for subp in (parser_r, parser_d): 
-            subp.add_argument('--output', metavar = 'file-name', dest = 'outFileName', default = "g_consensus", 
+            subp.add_argument('-o', '--output', metavar = 'file-name', dest = 'out_file_name', default = "g_consensus", 
                                help = 'consensus output filename')
-            subp.add_argument('--outputDir', metavar = 'directory-name', dest = 'outDirName', default = "./", 
+            subp.add_argument('-d', '--output_dir', metavar = 'directory-name', dest = 'out_dir_name', default = "./", 
                                help = 'consensus output working directory')
             subp.add_argument('--cname', metavar = 'consensus-seq-name', dest = 'consensus_seq_name', default = "consensus", 
                                help = 'consensus sequence name')
@@ -196,6 +246,8 @@ class Consensus(PBMultiToolRunner):
                               help = 'number of iteration of consensus correction')
             subp.add_argument('--max_n_reads', default = 150, dest = 'max_num_reads',
                               help = 'the maximum number of reads used for consensus')
+            subp.add_argument('--dump_dag_info', action='store_true', default = False, dest="dump_dag_info",
+                               help = 'dump the information of the dag, including a pileup view of the alignments')
                     
     def getVersion(self):
         return __version__
@@ -203,30 +255,36 @@ class Consensus(PBMultiToolRunner):
     def denovoConsensus(self):
         input_fasta_name = self.args.input 
         rid,s =best_template_by_blasr(input_fasta_name)
-        prefix = self.args.outFileName.split(".")
+        prefix = self.args.out_file_name.split(".")
         if len(prefix) > 1:
             prefix = ".".join(prefix[:-1])
         else:
             prefix = ".".join(prefix)
-        full_prefix = os.path.join(self.args.outDirName, prefix)
+        full_prefix = os.path.join(self.args.out_dir_name, prefix)
         with open("%s_ref.fa" % full_prefix, "w") as f:
             print >>f ,">%s_ref" % self.args.consensus_seq_name
             print >>f, s
         hp_corr = False if self.args.disable_hp_corr else True
         generate_consensus(input_fasta_name, "%s_ref.fa" % full_prefix, full_prefix, self.args.consensus_seq_name, 
-                           hp_corr, self.args.niter, self.args.max_num_reads, self.args.entropy_th)
+                           hp_corr, self.args.niter, 
+                           self.args.max_num_reads, 
+                           self.args.entropy_th,
+                           self.args.dump_dag_info)
 
     def refConsensus(self):
         input_fasta_name = self.args.input 
-        prefix = self.args.outFileName.split(".")
+        prefix = self.args.out_file_name.split(".")
         if len(prefix) > 1:
             prefix = ".".join(prefix[:-1])
         else:
             prefix = ".".join(prefix)
-        full_prefix = os.path.join(self.args.outDirName, prefix)
+        full_prefix = os.path.join(self.args.out_dir_name, prefix)
         hp_corr = False if self.args.disable_hp_corr else True
         generate_consensus(input_fasta_name, self.args.ref, full_prefix, self.args.consensus_seq_name,
-                           hp_corr, self.args.niter, self.args.max_num_reads, self.args.entropy_th)
+                           hp_corr, self.args.niter, 
+                           self.args.max_num_reads, 
+                           self.args.entropy_th,
+                           self.args.dump_dag_info)
 
     def run(self):
         logging.debug("Arguments" + str(self.args))

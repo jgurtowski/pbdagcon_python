@@ -54,12 +54,11 @@ from pbtools.pbdagcon.utils import read_node_vector
 from pbtools.pbdagcon.utils import detect_missing
 
 
-__p4revision__ = "$Revision: #9 $"
-__p4change__ = "$Change: 105511 $"
+__p4revision__ = "$Revision$"
+__p4change__ = "$Change$"
 revNum = int(__p4revision__.strip("$").split(" ")[1].strip("#"))
 changeNum = int(__p4change__.strip("$").split(":")[-1])
-#__version__ = "%s-r%d-c%d" % ( pkg_resources.require("pbtools.aligngraph")[0].version, revNum, changeNum )
-__version__ = "rc"
+__version__ = "%s-r%d-c%d" % ( pkg_resources.require("pbtools.pbdagcon")[0].version, revNum, changeNum )
 
 
 rmap = dict(zip("ACGTN-","TGCAN-"))

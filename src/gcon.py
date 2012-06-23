@@ -133,7 +133,7 @@ def generate_consensus(inputFastaName, refFastaName, prefix, consensusName, hpFi
     normalize_fasta(inputFastaName, refFastaName, "%s_input.fa" % prefix)
 
     get_consensus("%s_input.fa" % prefix, 
-                  "%s_ref.fa" % prefix, 
+                  refFastaName, 
                   "%s.fa" % prefix, 
                   consensusName,
                   hp_correction = hpFix)

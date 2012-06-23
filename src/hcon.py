@@ -164,7 +164,7 @@ def generate_haplotype_consensus(inputFastaName, refFastaName, prefix, consensus
         get_subset_reads("%s_input.fa" % prefix, cluster, 0, "%s_h1_input.fa" % prefix)
         
         rid,s = best_template_by_blasr("%s_h1_input.fa" % prefix)
-        print rid, len(s)
+        #print rid, len(s)
         with open("%s_h1_ref.fa" % prefix, "w") as f:
             print >>f ,">%s_h1_ref" % prefix
             print >>f, s
@@ -178,7 +178,7 @@ def generate_haplotype_consensus(inputFastaName, refFastaName, prefix, consensus
         get_subset_reads("%s_input.fa" % prefix, cluster, 1, "%s_h2_input.fa" % prefix)
         
         rid,s = best_template_by_blasr("%s_h2_input.fa" % prefix)
-        print rid, len(s)
+        #print rid, len(s)
         with open("%s_h2_ref.fa" % prefix, "w") as f:
             print >>f ,">%s_h2_ref" % prefix
             print >>f, s
@@ -216,7 +216,7 @@ class HapConsensus(PBMultiToolRunner):
                               help = 'a reference fasta file')
 
         for subp in (parser_r, parser_d): 
-            subp.add_argument('--output', metavar = 'file-name', dest = 'outFileName', default = "ag_consensus", 
+            subp.add_argument('--output', metavar = 'file-name', dest = 'outFileName', default = "h_consensus", 
                                help = 'consensus output filename')
             subp.add_argument('--outputDir', metavar = 'directory-name', dest = 'outDirName', default = "./", 
                                help = 'consensus output working directory')

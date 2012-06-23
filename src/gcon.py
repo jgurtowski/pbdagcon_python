@@ -167,7 +167,7 @@ class Consensus(PBMultiToolRunner):
                               help = 'a reference fasta file')
 
         for subp in (parser_r, parser_d): 
-            subp.add_argument('--output', metavar = 'file-name', dest = 'outFileName', default = "ag_consensus", 
+            subp.add_argument('--output', metavar = 'file-name', dest = 'outFileName', default = "g_consensus", 
                                help = 'consensus output filename')
             subp.add_argument('--outputDir', metavar = 'directory-name', dest = 'outDirName', default = "./", 
                                help = 'consensus output working directory')

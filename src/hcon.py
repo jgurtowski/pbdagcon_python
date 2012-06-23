@@ -100,28 +100,32 @@ def normalize_fasta(fastaFile, refFile, outFile):
         print >>of, "\n".join(outData)
 
 
-def get_consensus(read_fn, init_ref, consensus_fn, consens_seq_name, min_iteration = 4, hp_correction = True):
-    g = constructe_aln_graph_from_fasta(read_fn, init_ref, max_num_reads = 150, remove_in_del = False)
+def get_consensus(read_fn, init_ref, consensus_fn, consens_seq_name, 
+                  hp_correction = True,
+                  min_iteration = 4, 
+                  max_num_reads = 150,
+                  entropy_th = 0.65):
+    g = constructe_aln_graph_from_fasta(read_fn, init_ref, max_num_reads = max_num_reads, remove_in_del = False)
     s,c = g.generate_consensus()
     with open(consensus_fn,"w") as f:
         print >>f, ">"+consens_seq_name
         print >>f, s.upper()
     if min_iteration > 1:
         for i in range(min_iteration-2):
-            g = constructe_aln_graph_from_fasta(read_fn, consensus_fn, max_num_reads = 150, remove_in_del = False)
+            g = constructe_aln_graph_from_fasta(read_fn, consensus_fn, max_num_reads = max_num_reads, remove_in_del = False)
             s,c = g.generate_consensus()
             with open(consensus_fn,"w") as f:
                 print >>f, ">"+consens_seq_name
                 print >>f, s.upper()
 
         if hp_correction:
-            g = constructe_aln_graph_from_fasta(read_fn, consensus_fn, max_num_reads = 150, remove_in_del = False)
-            s = detect_missing(g, entropy_th = 0.65)
+            g = constructe_aln_graph_from_fasta(read_fn, consensus_fn, max_num_reads = max_num_reads, remove_in_del = False)
+            s = detect_missing(g, entropy_th = entropy_th)
             with open(consensus_fn,"w") as f:
                 print >>f, ">"+consens_seq_name
                 print >>f, s.upper()
 
-        g = constructe_aln_graph_from_fasta(read_fn, consensus_fn, max_num_reads = 150, remove_in_del = False)
+        g = constructe_aln_graph_from_fasta(read_fn, consensus_fn, max_num_reads = max_num_reads, remove_in_del = False)
         s,c = g.generate_consensus()
         with open(consensus_fn,"w") as f:
             print >>f, ">"+consens_seq_name
@@ -129,7 +133,11 @@ def get_consensus(read_fn, init_ref, consensus_fn, consens_seq_name, min_iterati
 
 
 
-def generate_haplotype_consensus(inputFastaName, refFastaName, prefix, consensusName, hpFix):
+def generate_haplotype_consensus(inputFastaName, refFastaName, prefix, consensusName, 
+                                 hpFix = True,
+                                 min_iteration = 4, 
+                                 max_num_reads = 150,
+                                 entropy_th = 0.65):
 
 
     normalize_fasta(inputFastaName, refFastaName, "%s_input.fa" % prefix)
@@ -138,12 +146,15 @@ def generate_haplotype_consensus(inputFastaName, refFastaName, prefix, consensus
                   refFastaName,
                   "%s.fa" % prefix, 
                   consensusName,
-                  hp_correction = False)
+                  hp_correction = False,
+                  min_iteration = min_iteration,
+                  max_num_reads = max_num_reads,
+                  entropy_th = entropy_th)
 
     g = constructe_aln_graph_from_fasta("%s_input.fa" % prefix, 
                                "%s.fa" % prefix, 
                                ref_group=consensusName, 
-                               max_num_reads = 300, 
+                               max_num_reads = max_num_reads, 
                                remove_in_del = False)
 
     rv, hen = read_node_vector(g, entropy_th = 0.65)
@@ -172,7 +183,9 @@ def generate_haplotype_consensus(inputFastaName, refFastaName, prefix, consensus
                       "%s_h1_ref.fa" % prefix, 
                       "%s_h1.fa" % prefix, 
                       "%s_h1" % consensusName,
-                      hp_correction = hpFix)
+                      hp_correction = hpFix,
+                      min_iteration = min_iteration,
+                      max_num_reads = max_num_reads)
     
     if len(cluster[1]) > 0:
         get_subset_reads("%s_input.fa" % prefix, cluster, 1, "%s_h2_input.fa" % prefix)
@@ -186,7 +199,9 @@ def generate_haplotype_consensus(inputFastaName, refFastaName, prefix, consensus
                       "%s_h2_ref.fa" % prefix, 
                       "%s_h2.fa" % prefix, 
                       "%s_h2" % consensusName,
-                      hp_correction = hpFix)
+                      hp_correction = hpFix,
+                      min_iteration = min_iteration,
+                      max_num_reads = max_num_reads)
 
 class HapConsensus(PBMultiToolRunner):
 
@@ -247,7 +262,11 @@ class HapConsensus(PBMultiToolRunner):
             print >>f ,">%s_ref" % self.args.consensusSeqName
             print >>f, s
         hp_corr = False if self.args.disable_hp_corr else True
-        generate_haplotype_consensus(inputFastaName, "%s_ref.fa" % full_prefix, full_prefix, self.args.consensusSeqName, hpFix = hp_corr)
+        generate_haplotype_consensus(inputFastaName, "%s_ref.fa" % full_prefix, full_prefix, self.args.consensusSeqName, 
+                                     hpFix = hp_corr,
+                                     min_iteration = self.args.niter,
+                                     max_num_reads = self.args.maxNReads,
+                                     entropy_th = self.args.entropy_th)
 
     def refConsensus(self):
         inputFastaName = self.args.input 
@@ -258,7 +277,11 @@ class HapConsensus(PBMultiToolRunner):
             prefix = ".".join(prefix)
         full_prefix = os.path.join(self.args.outDirName, prefix)
         hp_corr = False if self.args.disable_hp_corr else True
-        generate_haplotype_consensus(inputFastaName, self.args.ref, full_prefix, self.args.consensusSeqName, hpFix = hp_corr)
+        generate_haplotype_consensus(inputFastaName, self.args.ref, full_prefix, self.args.consensusSeqName,
+                                     hpFix = hp_corr,
+                                     min_iteration = self.args.niter,
+                                     max_num_reads = self.args.maxNReads,
+                                     entropy_th = self.args.entropy_th)
 
     def run(self):
         if self.args.subName == 'd':

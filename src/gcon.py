@@ -100,35 +100,47 @@ def normalize_fasta(fastaFile, refFile, outFile):
         print >>of, "\n".join(outData)
 
 
-def get_consensus(read_fn, init_ref, consensus_fn, consens_seq_name, min_iteration = 4, hp_correction = True):
-    g = constructe_aln_graph_from_fasta(read_fn, init_ref, max_num_reads = 150, remove_in_del = False)
+def get_consensus(read_fn, init_ref, consensus_fn, consens_seq_name, 
+                  hp_correction = True, 
+                  min_iteration = 4, 
+                  max_num_reads = 150,
+                  entropy_th = 0.65):
+
+    g = constructe_aln_graph_from_fasta(read_fn, init_ref, max_num_reads = max_num_reads, remove_in_del = False)
     s,c = g.generate_consensus()
     with open(consensus_fn,"w") as f:
         print >>f, ">"+consens_seq_name
         print >>f, s.upper()
     if min_iteration > 1:
         for i in range(min_iteration-2):
-            g = constructe_aln_graph_from_fasta(read_fn, consensus_fn, max_num_reads = 150, remove_in_del = False)
+            g = constructe_aln_graph_from_fasta(read_fn, consensus_fn, max_num_reads = max_num_reads, remove_in_del = False)
             s,c = g.generate_consensus()
             with open(consensus_fn,"w") as f:
                 print >>f, ">"+consens_seq_name
                 print >>f, s.upper()
 
         if hp_correction:
-            g = constructe_aln_graph_from_fasta(read_fn, consensus_fn, max_num_reads = 150, remove_in_del = False)
-            s = detect_missing(g, entropy_th = 0.65)
+            g = constructe_aln_graph_from_fasta(read_fn, consensus_fn, max_num_reads = max_num_reads, remove_in_del = False)
+            s = detect_missing(g, entropy_th = entropy_th)
             with open(consensus_fn,"w") as f:
                 print >>f, ">"+consens_seq_name
                 print >>f, s.upper()
 
-        g = constructe_aln_graph_from_fasta(read_fn, consensus_fn, max_num_reads = 150, remove_in_del = False)
+        g = constructe_aln_graph_from_fasta(read_fn, consensus_fn, max_num_reads = max_num_reads, remove_in_del = False)
         s,c = g.generate_consensus()
         with open(consensus_fn,"w") as f:
             print >>f, ">"+consens_seq_name
             print >>f, s.upper()
 
 
-def generate_consensus(inputFastaName, refFastaName, prefix, consensusName, hpFix):
+def generate_consensus(inputFastaName, 
+                       refFastaName, 
+                       prefix, 
+                       consensusName, 
+                       hpFix, 
+                       min_iteration,
+                       max_num_reads,
+                       entropy_th):
 
     normalize_fasta(inputFastaName, refFastaName, "%s_input.fa" % prefix)
 
@@ -136,7 +148,10 @@ def generate_consensus(inputFastaName, refFastaName, prefix, consensusName, hpFi
                   refFastaName, 
                   "%s.fa" % prefix, 
                   consensusName,
-                  hp_correction = hpFix)
+                  hp_correction = hpFix,
+                  min_iteration = min_iteration,
+                  max_num_reads = max_num_reads,
+                  entropy_th = entropy_th)
 
 
 class Consensus(PBMultiToolRunner):
@@ -198,7 +213,8 @@ class Consensus(PBMultiToolRunner):
             print >>f ,">%s_ref" % self.args.consensusSeqName
             print >>f, s
         hp_corr = False if self.args.disable_hp_corr else True
-        generate_consensus(inputFastaName, "%s_ref.fa" % full_prefix, full_prefix, self.args.consensusSeqName, hpFix = hp_corr)
+        generate_consensus(inputFastaName, "%s_ref.fa" % full_prefix, full_prefix, self.args.consensusSeqName, 
+                           hp_corr, self.args.niter, self.args.maxNReads, self.args.entropy_th)
 
     def refConsensus(self):
         inputFastaName = self.args.input 
@@ -209,7 +225,8 @@ class Consensus(PBMultiToolRunner):
             prefix = ".".join(prefix)
         full_prefix = os.path.join(self.args.outDirName, prefix)
         hp_corr = False if self.args.disable_hp_corr else True
-        generate_consensus(inputFastaName, self.args.ref, full_prefix, self.args.consensusSeqName, hpFix = hp_corr)
+        generate_consensus(inputFastaName, self.args.ref, full_prefix, self.args.consensusSeqName,
+                           hp_corr, self.args.niter, self.args.maxNReads, self.args.entropy_th)
 
     def run(self):
         logging.debug("Arguments" + str(self.args))

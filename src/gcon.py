@@ -138,15 +138,18 @@ def get_consensus(read_fn, init_ref, consensus_fn, consens_seq_name,
 def output_dag_info(aln_graph, out_file_name):
 
     with open(out_file_name,"w") as f:
-        read_ids = set()
-        for n_id in aln_graph.nodes:
-            n = aln_graph.nodes[n_id]
+        read_ids = []
+        read_ids_set = set()
+        for n in sorted_nodes(aln_graph):
             for r in n.info:
-                read_ids.add(r)
+                if r not in read_ids_set:
+                    read_ids.append(r)
+                    read_ids_set.add(r)
 
 
         read_id_to_pos = dict(( (x[1],x[0]) for x in enumerate(list(read_ids))) )
-        for read_id, pileup_pos in read_id_to_pos.items():
+        for read_id in read_ids:
+            pileup_pos = read_id_to_pos[read_id]
             print >>f, "\t".join( [ "R", "%d" % pileup_pos, read_id ] )
 
         backbone_node_to_pos =  aln_graph.backbone_node_to_pos 

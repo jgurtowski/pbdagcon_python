@@ -128,9 +128,10 @@ def get_consensus(read_fn, init_ref, consensus_fn, consens_seq_name,
 
         g = constructe_aln_graph_from_fasta(read_fn, consensus_fn, max_num_reads = max_num_reads, remove_in_del = False)
         s,c = g.generate_consensus()
+        s = detect_missing(g, entropy_th = entropy_th)
         with open(consensus_fn,"w") as f:
             print >>f, ">"+consens_seq_name
-            print >>f, s.upper()
+            print >>f, s
 
         return g
 

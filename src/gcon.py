@@ -133,21 +133,21 @@ def get_consensus(read_fn, init_ref, consensus_fn, consens_seq_name,
             print >>f, s.upper()
 
 
-def generate_consensus(inputFastaName, 
-                       refFastaName, 
+def generate_consensus(input_fasta_name, 
+                       ref_fasta_name, 
                        prefix, 
-                       consensusName, 
+                       consensus_name, 
                        hpFix, 
                        min_iteration,
                        max_num_reads,
                        entropy_th):
 
-    normalize_fasta(inputFastaName, refFastaName, "%s_input.fa" % prefix)
+    normalize_fasta(input_fasta_name, ref_fasta_name, "%s_input.fa" % prefix)
 
     get_consensus("%s_input.fa" % prefix, 
-                  refFastaName, 
+                  ref_fasta_name, 
                   "%s.fa" % prefix, 
-                  consensusName,
+                  consensus_name,
                   hp_correction = hpFix,
                   min_iteration = min_iteration,
                   max_num_reads = max_num_reads,
@@ -186,7 +186,7 @@ class Consensus(PBMultiToolRunner):
                                help = 'consensus output filename')
             subp.add_argument('--outputDir', metavar = 'directory-name', dest = 'outDirName', default = "./", 
                                help = 'consensus output working directory')
-            subp.add_argument('--cname', metavar = 'consensus-seq-name', dest = 'consensusSeqName', default = "consensus", 
+            subp.add_argument('--cname', metavar = 'consensus-seq-name', dest = 'consensus_seq_name', default = "consensus", 
                                help = 'consensus sequence name')
             subp.add_argument('--disable_hp_correction', action='store_true', default = False, dest="disable_hp_corr",
                                help = 'disable aggressive homopolymer missing errot detection and correction')
@@ -194,15 +194,15 @@ class Consensus(PBMultiToolRunner):
                                help = 'homopolymer missing correction entropy threshold')
             subp.add_argument('--n_iter', default = 4, dest = 'niter',
                               help = 'number of iteration of consensus correction')
-            subp.add_argument('--max_n_reads', default = 150, dest = 'maxNReads',
+            subp.add_argument('--max_n_reads', default = 150, dest = 'max_num_reads',
                               help = 'the maximum number of reads used for consensus')
                     
     def getVersion(self):
         return __version__
     
     def denovoConsensus(self):
-        inputFastaName = self.args.input 
-        rid,s =best_template_by_blasr(inputFastaName)
+        input_fasta_name = self.args.input 
+        rid,s =best_template_by_blasr(input_fasta_name)
         prefix = self.args.outFileName.split(".")
         if len(prefix) > 1:
             prefix = ".".join(prefix[:-1])
@@ -210,14 +210,14 @@ class Consensus(PBMultiToolRunner):
             prefix = ".".join(prefix)
         full_prefix = os.path.join(self.args.outDirName, prefix)
         with open("%s_ref.fa" % full_prefix, "w") as f:
-            print >>f ,">%s_ref" % self.args.consensusSeqName
+            print >>f ,">%s_ref" % self.args.consensus_seq_name
             print >>f, s
         hp_corr = False if self.args.disable_hp_corr else True
-        generate_consensus(inputFastaName, "%s_ref.fa" % full_prefix, full_prefix, self.args.consensusSeqName, 
-                           hp_corr, self.args.niter, self.args.maxNReads, self.args.entropy_th)
+        generate_consensus(input_fasta_name, "%s_ref.fa" % full_prefix, full_prefix, self.args.consensus_seq_name, 
+                           hp_corr, self.args.niter, self.args.max_num_reads, self.args.entropy_th)
 
     def refConsensus(self):
-        inputFastaName = self.args.input 
+        input_fasta_name = self.args.input 
         prefix = self.args.outFileName.split(".")
         if len(prefix) > 1:
             prefix = ".".join(prefix[:-1])
@@ -225,8 +225,8 @@ class Consensus(PBMultiToolRunner):
             prefix = ".".join(prefix)
         full_prefix = os.path.join(self.args.outDirName, prefix)
         hp_corr = False if self.args.disable_hp_corr else True
-        generate_consensus(inputFastaName, self.args.ref, full_prefix, self.args.consensusSeqName,
-                           hp_corr, self.args.niter, self.args.maxNReads, self.args.entropy_th)
+        generate_consensus(input_fasta_name, self.args.ref, full_prefix, self.args.consensus_seq_name,
+                           hp_corr, self.args.niter, self.args.max_num_reads, self.args.entropy_th)
 
     def run(self):
         logging.debug("Arguments" + str(self.args))

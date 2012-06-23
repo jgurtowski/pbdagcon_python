@@ -64,10 +64,10 @@ __version__ = "rc"
 
 rmap = dict(zip("ACGTN-","TGCAN-"))
 
-def normalize_fasta(fastaFile, refFile, outFile):
-    f = SimpleFastaReader(fastaFile)
+def normalize_fasta(fasta_file, ref_file, out_file):
+    f = SimpleFastaReader(fasta_file)
     recs = []
-    with open(outFile, "w") as of:
+    with open(out_file, "w") as of:
         for r in f:
             r_id = "%s" %  hex(zlib.adler32(r.name + r.sequence) & 0xffffffff)
             print >>of, ">"+r_id
@@ -75,7 +75,7 @@ def normalize_fasta(fastaFile, refFile, outFile):
             print >>of, seq 
 
 
-    output = subprocess.check_output("blasr -bestn 1 -m 1 %s %s" % ( outFile, refFile ), shell=True)
+    output = subprocess.check_output("blasr -bestn 1 -m 1 %s %s" % ( out_file, ref_file ), shell=True)
     direction = {}
     output = output.strip().split("\n")
     for l in output:
@@ -86,7 +86,7 @@ def normalize_fasta(fastaFile, refFile, outFile):
         else:
             direction[rId] = "+"
 
-    f = SimpleFastaReader(outFile)
+    f = SimpleFastaReader(out_file)
     outData = []
     for r in f:
         r_id = "%s" % r.name
@@ -96,7 +96,7 @@ def normalize_fasta(fastaFile, refFile, outFile):
             if direction.get(r_id, "+") != "+":
                 seq = "".join([rmap(c) for c in seq[::-1]])
         outData.append(seq)
-    with open(outFile,"w") as of:
+    with open(out_file,"w") as of:
         print >>of, "\n".join(outData)
 
 
@@ -133,19 +133,19 @@ def get_consensus(read_fn, init_ref, consensus_fn, consens_seq_name,
 
 
 
-def generate_haplotype_consensus(inputFastaName, refFastaName, prefix, consensusName, 
+def generate_haplotype_consensus(inpute_fasta_name, ref_fasta_name, prefix, consensus_name, 
                                  hpFix = True,
                                  min_iteration = 4, 
                                  max_num_reads = 150,
                                  entropy_th = 0.65):
 
 
-    normalize_fasta(inputFastaName, refFastaName, "%s_input.fa" % prefix)
+    normalize_fasta(inpute_fasta_name, ref_fasta_name, "%s_input.fa" % prefix)
 
     get_consensus("%s_input.fa" % prefix, 
-                  refFastaName,
+                  ref_fasta_name,
                   "%s.fa" % prefix, 
-                  consensusName,
+                  consensus_name,
                   hp_correction = False,
                   min_iteration = min_iteration,
                   max_num_reads = max_num_reads,
@@ -153,7 +153,7 @@ def generate_haplotype_consensus(inputFastaName, refFastaName, prefix, consensus
 
     g = constructe_aln_graph_from_fasta("%s_input.fa" % prefix, 
                                "%s.fa" % prefix, 
-                               ref_group=consensusName, 
+                               ref_group=consensus_name, 
                                max_num_reads = max_num_reads, 
                                remove_in_del = False)
 
@@ -182,7 +182,7 @@ def generate_haplotype_consensus(inputFastaName, refFastaName, prefix, consensus
         get_consensus("%s_h1_input.fa" % prefix, 
                       "%s_h1_ref.fa" % prefix, 
                       "%s_h1.fa" % prefix, 
-                      "%s_h1" % consensusName,
+                      "%s_h1" % consensus_name,
                       hp_correction = hpFix,
                       min_iteration = min_iteration,
                       max_num_reads = max_num_reads)
@@ -198,7 +198,7 @@ def generate_haplotype_consensus(inputFastaName, refFastaName, prefix, consensus
         get_consensus("%s_h2_input.fa" % prefix, 
                       "%s_h2_ref.fa" % prefix, 
                       "%s_h2.fa" % prefix, 
-                      "%s_h2" % consensusName,
+                      "%s_h2" % consensus_name,
                       hp_correction = hpFix,
                       min_iteration = min_iteration,
                       max_num_reads = max_num_reads)
@@ -231,11 +231,11 @@ class HapConsensus(PBMultiToolRunner):
                               help = 'a reference fasta file')
 
         for subp in (parser_r, parser_d): 
-            subp.add_argument('--output', metavar = 'file-name', dest = 'outFileName', default = "h_consensus", 
+            subp.add_argument('--output', metavar = 'file-name', dest = 'out_file_name', default = "h_consensus", 
                                help = 'consensus output filename')
-            subp.add_argument('--outputDir', metavar = 'directory-name', dest = 'outDirName', default = "./", 
+            subp.add_argument('--outputDir', metavar = 'directory-name', dest = 'out_dir_name', default = "./", 
                                help = 'consensus output working directory')
-            subp.add_argument('--cname', metavar = 'consensus-seq-name', dest = 'consensusSeqName', default = "consensus", 
+            subp.add_argument('--cname', metavar = 'consensus-seq-name', dest = 'consensus_seq_name', default = "consensus", 
                                help = 'consensus sequence name')
             subp.add_argument('--disable_hp_correction', action='store_true', default = False, dest="disable_hp_corr",
                                help = 'disable aggressive homopolymer missing errot detection and correction')
@@ -243,51 +243,51 @@ class HapConsensus(PBMultiToolRunner):
                                help = 'homopolymer missing correction entropy threshold')
             subp.add_argument('--n_iter', default = 4, dest = 'niter',
                               help = 'number of iteration of consensus correction')
-            subp.add_argument('--max_n_reads', default = 150, dest = 'maxNReads',
+            subp.add_argument('--max_n_reads', default = 150, dest = 'max_num_reads',
                               help = 'the maximum number of reads used for consensus')
                     
     def getVersion(self):
         return __version__
     
-    def denovoConsensus(self):
-        inputFastaName = self.args.input 
-        rid,s =best_template_by_blasr(inputFastaName)
-        prefix = self.args.outFileName.split(".")
+    def denovo_consensus(self):
+        inpute_fasta_name = self.args.input 
+        rid,s =best_template_by_blasr(inpute_fasta_name)
+        prefix = self.args.out_file_name.split(".")
         if len(prefix) > 1:
             prefix = ".".join(prefix[:-1])
         else:
             prefix = ".".join(prefix)
-        full_prefix = os.path.join(self.args.outDirName, prefix)
+        full_prefix = os.path.join(self.args.out_dir_name, prefix)
         with open("%s_ref.fa" % full_prefix, "w") as f:
-            print >>f ,">%s_ref" % self.args.consensusSeqName
+            print >>f ,">%s_ref" % self.args.consensus_seq_name
             print >>f, s
         hp_corr = False if self.args.disable_hp_corr else True
-        generate_haplotype_consensus(inputFastaName, "%s_ref.fa" % full_prefix, full_prefix, self.args.consensusSeqName, 
+        generate_haplotype_consensus(inpute_fasta_name, "%s_ref.fa" % full_prefix, full_prefix, self.args.consensus_seq_name, 
                                      hpFix = hp_corr,
                                      min_iteration = self.args.niter,
-                                     max_num_reads = self.args.maxNReads,
+                                     max_num_reads = self.args.max_num_reads,
                                      entropy_th = self.args.entropy_th)
 
-    def refConsensus(self):
-        inputFastaName = self.args.input 
-        prefix = self.args.outFileName.split(".")
+    def ref_consensus(self):
+        inpute_fasta_name = self.args.input 
+        prefix = self.args.out_file_name.split(".")
         if len(prefix) > 1:
             prefix = ".".join(prefix[:-1])
         else:
             prefix = ".".join(prefix)
-        full_prefix = os.path.join(self.args.outDirName, prefix)
+        full_prefix = os.path.join(self.args.out_dir_name, prefix)
         hp_corr = False if self.args.disable_hp_corr else True
-        generate_haplotype_consensus(inputFastaName, self.args.ref, full_prefix, self.args.consensusSeqName,
+        generate_haplotype_consensus(inpute_fasta_name, self.args.ref, full_prefix, self.args.consensus_seq_name,
                                      hpFix = hp_corr,
                                      min_iteration = self.args.niter,
-                                     max_num_reads = self.args.maxNReads,
+                                     max_num_reads = self.args.max_num_reads,
                                      entropy_th = self.args.entropy_th)
 
     def run(self):
         if self.args.subName == 'd':
-            self.denovoConsensus()
+            self.denovo_consensus()
         elif self.args.subName == 'r':
-            self.refConsensus()
+            self.ref_consensus()
 
 if __name__ == '__main__':    
     sys.exit(HapConsensus().start())

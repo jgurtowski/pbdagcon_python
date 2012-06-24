@@ -207,12 +207,12 @@ def generate_haplotype_consensus(inpute_fasta_name, ref_fasta_name, prefix, cons
 class HapConsensus(PBMultiToolRunner):
 
     def __init__(self):
-        desc = ["""Making haplotype consensus sequences from a group reads storing in a fasta file.\
-                All of the reads are expected to cover most of the target templates that gets sequenced.\
-                If the reads have broad read length distribution and not all of them cover the same region of\
-                a template, this code won't generat correct result.\
-                This code is designed for getting consensus up to the length of reads (~10k).\
-                It is not optimized for getting consensus for larger templates."""]
+        desc = ["Making haplotype consensus sequences from a group reads storing in a fasta file. "
+                "All of the reads are expected to cover most of the target templates that gets sequenced. "
+                "If the reads have broad read length distribution and not all of them cover the same " 
+                "region of a template, this code won't generate correct result. "
+                "This code is designed for getting consensus up to the length of reads (~10k). "
+                "It is not optimized for getting consensus for larger templates."]
         super(HapConsensus, self).__init__('\n'.join(desc))
 
         subparsers = self.getSubParsers()

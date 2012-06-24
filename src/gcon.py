@@ -52,6 +52,7 @@ from pbtools.pbdagcon.utils import clustering_read
 from pbtools.pbdagcon.utils import get_subset_reads
 from pbtools.pbdagcon.utils import read_node_vector
 from pbtools.pbdagcon.utils import detect_missing
+from pbtools.pbdagcon.utils import mark_lower_case_base
 
 
 __p4revision__ = "$Revision$"
@@ -127,7 +128,7 @@ def get_consensus(read_fn, init_ref, consensus_fn, consens_seq_name,
 
         g = constructe_aln_graph_from_fasta(read_fn, consensus_fn, max_num_reads = max_num_reads, remove_in_del = False)
         s,c = g.generate_consensus()
-        s = detect_missing(g, entropy_th = entropy_th)
+        s = mark_lower_case_base(g, entropy_th = entropy_th)
         with open(consensus_fn,"w") as f:
             print >>f, ">"+consens_seq_name
             print >>f, s

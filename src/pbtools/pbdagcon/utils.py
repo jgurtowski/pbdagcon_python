@@ -373,6 +373,32 @@ def detect_missing(aln_graph, entropy_th = 0.66, interval = None):
             s.append(d[3].upper())
     return "".join(s)
 
+def mark_lower_case_base(aln_graph, entropy_th = 0.66, interval = None):
+    data = sorted_node_data(aln_graph, entropy_th = 0, interval = interval)
+    s = []
+    for d in data:
+        #if d[7] > entropy_th and d[2] == "-":
+        #    s.append(d[3].lower())
+        #    continue
+        if d[2] =="+" and d[7] > entropy_th:
+            #pass
+            s.append(d[3].lower())
+        elif d[2] == "+":
+            s.append(d[3].upper())
+    return "".join(s)
+
+def get_subset_reads(fasta_fn ,cluster_dict, cluster_index, out_file_name):
+    from pbcore.io import FastaIO
+    f = FastaIO.SimpleFastaReader(fasta_fn)
+    
+    with open(out_file_name,"w") as out_f:
+        for r in f:
+            read_id = r.name
+            read_seq = r.sequence.upper()
+
+            if read_id in cluster_dict[cluster_index]:
+                print >>out_f, ">"+r.name
+                print >>out_f, r.sequence
 def get_subset_reads(fasta_fn ,cluster_dict, cluster_index, out_file_name):
     from pbcore.io import FastaIO
     f = FastaIO.SimpleFastaReader(fasta_fn)

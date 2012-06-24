@@ -222,7 +222,7 @@ class Consensus(PBMultiToolRunner):
         subparsers = self.getSubParsers()
 
         desc = ['using self-self alignment for getting the seed sequence for constructing consensus']
-        parser_d = subparsers.add_parser('d', help = "generate the seed sequence for consensus using alignments",
+        parser_d = subparsers.add_parser('d', help = "generate consensus using the alignments between the input sequneces to find seed sequence",
                                          description = "\n".join(desc), parents = [self.parser])
         parser_d.add_argument('input', metavar = 'input.fasta',
                               help = 'an input fasta file')

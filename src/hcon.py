@@ -175,13 +175,13 @@ def generate_haplotype_consensus(inpute_fasta_name, ref_fasta_name, prefix, cons
     if len(cluster[0]) > 0:
         get_subset_reads("%s_input.fa" % prefix, cluster, 0, "%s_h1_input.fa" % prefix)
         
-        rid,s = best_template_by_blasr("%s_h1_input.fa" % prefix)
+        #rid,s = best_template_by_blasr("%s_h1_input.fa" % prefix)
         #print rid, len(s)
-        with open("%s_h1_ref.fa" % prefix, "w") as f:
-            print >>f ,">%s_h1_ref" % prefix
-            print >>f, s
+        #with open("%s_h1_ref.fa" % prefix, "w") as f:
+        #    print >>f ,">%s_h1_ref" % prefix
+        #    print >>f, s
         get_consensus("%s_h1_input.fa" % prefix, 
-                      "%s_h1_ref.fa" % prefix, 
+                      "%s.fa" % prefix, 
                       "%s_h1.fa" % prefix, 
                       "%s_h1" % consensus_name,
                       hp_correction = hpFix,
@@ -191,13 +191,13 @@ def generate_haplotype_consensus(inpute_fasta_name, ref_fasta_name, prefix, cons
     if len(cluster[1]) > 0:
         get_subset_reads("%s_input.fa" % prefix, cluster, 1, "%s_h2_input.fa" % prefix)
         
-        rid,s = best_template_by_blasr("%s_h2_input.fa" % prefix)
+        #rid,s = best_template_by_blasr("%s_h2_input.fa" % prefix)
         #print rid, len(s)
-        with open("%s_h2_ref.fa" % prefix, "w") as f:
-            print >>f ,">%s_h2_ref" % prefix
-            print >>f, s
+        #with open("%s_h2_ref.fa" % prefix, "w") as f:
+        #    print >>f ,">%s_h2_ref" % prefix
+        #    print >>f, s
         get_consensus("%s_h2_input.fa" % prefix, 
-                      "%s_h2_ref.fa" % prefix, 
+                      "%s.fa" % prefix, 
                       "%s_h2.fa" % prefix, 
                       "%s_h2" % consensus_name,
                       hp_correction = hpFix,

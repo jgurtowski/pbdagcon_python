@@ -1,6 +1,7 @@
 from math import log, sqrt
-import numpy as np
+import os, numpy as np
 from .aligngraph import convert_mismatches, AlnGraph
+from pbcore.io import FastaReader
 
 class AlignGraphUtilError(Exception):
     pass
@@ -287,10 +288,7 @@ def find_best_aligned_read(cmpH5_fn, ref_group=None):
     return read_data[-1], all_read
         
 def best_template_by_blasr(fasta_fn, len_threshold = 300, min_number_reads = 1):
-    import os
-    import numpy as np
-    from pbcore.io import FastaIO
-    f = FastaIO.SimpleFastaReader(fasta_fn)
+    f = FastaReader(fasta_fn)
     read_dict = {}
     for r in f:
         r_id = r.name.split("/")[0]
@@ -388,8 +386,7 @@ def mark_lower_case_base(aln_graph, entropy_th = 0.66, interval = None):
     return "".join(s)
 
 def get_subset_reads(fasta_fn ,cluster_dict, cluster_index, out_file_name):
-    from pbcore.io import FastaIO
-    f = FastaIO.SimpleFastaReader(fasta_fn)
+    f = FastaReader(fasta_fn)
     
     with open(out_file_name,"w") as out_f:
         for r in f:
@@ -400,8 +397,7 @@ def get_subset_reads(fasta_fn ,cluster_dict, cluster_index, out_file_name):
                 print >>out_f, ">"+r.name
                 print >>out_f, r.sequence
 def get_subset_reads(fasta_fn ,cluster_dict, cluster_index, out_file_name):
-    from pbcore.io import FastaIO
-    f = FastaIO.SimpleFastaReader(fasta_fn)
+    f = FastaReader(fasta_fn)
     
     with open(out_file_name,"w") as out_f:
         for r in f:

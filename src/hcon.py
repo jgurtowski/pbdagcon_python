@@ -42,7 +42,7 @@ import zlib
 import subprocess
 
 from pbcore.util.ToolRunner import PBMultiToolRunner
-from pbcore.io.FastaIO import SimpleFastaReader
+from pbcore.io import FastaReader
 
 from pbtools.pbdagcon.aligngraph import *
 from pbtools.pbdagcon.utils import constructe_aln_graph_from_fasta 

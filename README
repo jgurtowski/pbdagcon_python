@@ -1,0 +1,35 @@
+What is pbdagcon?
+=================
+
+pbdagcon is a tool that implements DAGCon (Directed Acyclic Graph Consensus)
+which is a sequnece consensus algorithm based on using directed acyclic graphs
+to encode multiple sequence alignment.
+
+It uses the alignment information from blasr to align sequence reads to a
+"backbone" sequence. Based on the underlying alignment directed acyclic graph
+(DAG), it will be able to use the new information from the reads to find the
+discrepancies between the reads and the "backbone" sequences.  A dynamic
+programming process is then applied to the DAG to find the optimum sequence of
+bases as the consensus.  The new consensus can be used as a new backbone
+sequence to iteratively improve the consensus quality.
+
+While the code is developed for processing PacBio(TM) raw sequence data, the
+algorithm can be used for general consensus purpose. Currently, it only takes
+FASTA input. For shorter read sequences, one might need to adjust the blasr
+alignment parameters to get the alignment string properly.
+
+The code and the underlying graphical data structue have been used for some
+algorithm development prototying including phasing reads, pre-assembly and a
+work around to generate consensus from itermedite Celera Assembler outputs.
+
+The initial graphical algorithm was a pure python implementation. Cython was
+then use to speed it up.
+
+Check out the example/ directory to see how to use it. 
+
+This code is released under the assumption it will help the community to adopt
+the PacBio data and make interesting science project possible and more
+feasible.  It is not an official software release from the PacBio(TM) software
+developing organization.
+
+

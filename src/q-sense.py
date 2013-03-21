@@ -47,11 +47,14 @@ from pbcore.util.ToolRunner import PBMultiToolRunner
 from pbcore.io import FastaReader
 from pbtools.pbdagcon.q_sense import *
 
-__p4revision__ = "$Revision: #15 $"
-__p4change__ = "$Change: 115421 $"
-revNum = int(__p4revision__.strip("$").split(" ")[1].strip("#"))
-changeNum = int(__p4change__.strip("$").split(":")[-1])
-__version__ = "%s-r%d-c%d" % ( pkg_resources.require("pbtools.pbdagcon")[0].version, revNum, changeNum )
+try:
+    __p4revision__ = "$Revision: #15 $"
+    __p4change__ = "$Change: 115421 $"
+    revNum = int(__p4revision__.strip("$").split(" ")[1].strip("#"))
+    changeNum = int(__p4change__.strip("$").split(":")[-1])
+    __version__ = "%s-r%d-c%d" % ( pkg_resources.require("pbtools.pbdagcon")[0].version, revNum, changeNum )
+except:
+    __version__ = "pbtools.pbdagcon-github"
 
 
 class Consensus(PBMultiToolRunner):

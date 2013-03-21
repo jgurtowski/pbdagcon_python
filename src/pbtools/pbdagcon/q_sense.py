@@ -59,12 +59,14 @@ from pbtools.pbdagcon.c_utils import read_node_vector
 from pbtools.pbdagcon.c_utils import detect_missing
 from pbtools.pbdagcon.c_utils import mark_lower_case_base
 
-
-__p4revision__ = "$Revision: #15 $"
-__p4change__ = "$Change: 115421 $"
-revNum = int(__p4revision__.strip("$").split(" ")[1].strip("#"))
-changeNum = int(__p4change__.strip("$").split(":")[-1])
-__version__ = "%s-r%d-c%d" % ( pkg_resources.require("pbtools.pbdagcon")[0].version, revNum, changeNum )
+try:
+    __p4revision__ = "$Revision: #15 $"
+    __p4change__ = "$Change: 115421 $"
+    revNum = int(__p4revision__.strip("$").split(" ")[1].strip("#"))
+    changeNum = int(__p4change__.strip("$").split(":")[-1])
+    __version__ = "%s-r%d-c%d" % ( pkg_resources.require("pbtools.pbdagcon")[0].version, revNum, changeNum )
+except:
+    __version__ = "pbtools.pbdagcon-github"
 
 rmap = dict(zip("ACGTN-","TGCAN-"))
 

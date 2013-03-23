@@ -220,6 +220,9 @@ cdef class AlnGraph(object):
     def get_backbone_node(self):
         return self.backbone_node
 
+    def get_read_range(self):
+        return self.read_range
+
     def get_consensus_path(self):
         return self.consensus_path
 
@@ -263,7 +266,7 @@ cdef class AlnGraph(object):
                 backbone_pos += 1
                 last_node = node
                 if rId != None:
-                    node.info.append(rId)
+                    node.info.append( (rId, read_pos) )
 
             elif read_base == "-" and backbone_base != "-":
                 node = self.backbone_nodes[ backbone_pos ]
@@ -284,7 +287,7 @@ cdef class AlnGraph(object):
                 read_pos += 1
                 last_node = node
                 if rId != None:
-                    node.info.append(rId)
+                    node.info.append( (rId, read_pos) )
 
             self.backbone_to_reads.setdefault(backbone_pos,set())
 

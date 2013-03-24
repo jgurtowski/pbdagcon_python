@@ -117,7 +117,8 @@ def get_consensus(read_fn, init_ref, consensus_fn, consens_seq_name,
                   min_cov = 8,
                   max_cov = 60,
                   nproc = 4,
-                  mark_lower_case = False):
+                  mark_lower_case = False,
+                  use_read_id = False):
 
     g = constructe_aln_graph_from_fasta(read_fn, init_ref, max_num_reads = max_num_reads, remove_in_del = False, max_cov = max_cov, nproc = nproc)
     s, c = g.generate_consensus(min_cov = min_cov)
@@ -131,7 +132,7 @@ def get_consensus(read_fn, init_ref, consensus_fn, consens_seq_name,
         for i in range(min_iteration-2):
             if len(s) < 100:
                 return s
-            g = constructe_aln_graph_from_fasta(read_fn, consensus_fn, max_num_reads = max_num_reads, remove_in_del = False, max_cov = max_cov, nproc = nproc)
+            g = constructe_aln_graph_from_fasta(read_fn, consensus_fn, max_num_reads = max_num_reads, remove_in_del = False, max_cov = max_cov, nproc = nproc, use_read_id = use_read_id)
             s, c = g.generate_consensus(min_cov = min_cov)
             with open(consensus_fn,"w") as f:
                 print >>f, ">"+consens_seq_name

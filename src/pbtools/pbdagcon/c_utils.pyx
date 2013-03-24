@@ -168,7 +168,8 @@ def constructe_aln_graph_from_fasta(read_fasta_fn,
                                     ref_group = None,
                                     min_length = None,
                                     max_cov = 60,
-                                    nproc = 4):
+                                    nproc = 4,
+                                    use_read_id = False):
 
     import os
 
@@ -196,7 +197,10 @@ def constructe_aln_graph_from_fasta(read_fasta_fn,
         rId = aln[2]
         rId = rId.split("/")[0]
         aln = aln[0:2]
-        g.add_alignment( aln, "%s" % rId)
+        if use_read_id:
+            g.add_alignment( aln, "%s" % rId)
+        else:
+            g.add_alignment( aln )
 
     return g
 

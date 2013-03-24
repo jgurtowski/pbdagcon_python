@@ -528,7 +528,8 @@ cdef class AlnGraph(object):
         for n in self.consensus_path:
             if n not in [self.begin_node, self.end_node]:
                 s.append(n.base)
-                if len(n.info) >= min_cov:
+                #if len(n.info) >= min_cov:
+                if n.weight >= min_cov:
                     cov_good.append("1")
                 else:
                     cov_good.append("0")
@@ -544,7 +545,7 @@ cdef class AlnGraph(object):
                     en2 = n.best_in_edge.count
                 else:
                     en2 = 0
-                c.append( (rn, en2, en) )
+                c.append( ( rn, en2, en, n.backbone_node.coverage ) )
 
         s = "".join(s)
         cov_good = "".join(cov_good)

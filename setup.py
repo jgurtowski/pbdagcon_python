@@ -14,7 +14,7 @@ if 'setuptools.extension' in sys.modules:
 setup(
     setup_requires=['setuptools_cython'],
     name = 'pbtools.pbdagcon',
-    version='0.2.0',
+    version='0.2.1',
     author='pbiDevNet',
     author_email='pbiDevNet@pacificbiosciences.com',
     license='LICENSE.txt',

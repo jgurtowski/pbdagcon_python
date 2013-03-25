@@ -115,6 +115,18 @@ cdef class AlnEdge(object):
         self.count = 0
         self.score = 0
 
+    def get_ID(self):
+        return self.ID
+
+    def get_in_node(self):
+        return self.in_node
+
+    def get_out_node(self):
+        return self.out_node
+
+    def get_count(self):
+        return self.count
+
     def __repr__(self):
         return "(edge_ID:%d, in_node:%s, out_node:%s)" % (self.ID, self.in_node.__repr__(), self.out_node.__repr__() )
 
@@ -142,6 +154,9 @@ cdef class AlnNode(object):
     def increase_weight(self, w = 1):
         self.weight += w
 
+    def get_ID(self):
+        return self.ID
+
     def get_info(self):
         return self.info
 
@@ -156,6 +171,9 @@ cdef class AlnNode(object):
 
     def get_is_backbone(self):
         return self.is_backbone
+
+    def get_weight(self):
+        return self.weight
 
     def __repr__(self):
         return "(node_id:%d, base:%s, b:%s, w:%d, c:%d)" % (self.ID, self.base, self.is_backbone, self.weight, self.coverage )
@@ -225,6 +243,9 @@ cdef class AlnGraph(object):
 
     def get_consensus_path(self):
         return self.consensus_path
+
+    def get_edges(self):
+        return self.edges
 
     def add_alignment(self, tuple aln, rId = None):
         cdef int aln_pos, backbone_pos, read_pos, backbone_end_pos
@@ -528,7 +549,6 @@ cdef class AlnGraph(object):
         for n in self.consensus_path:
             if n not in [self.begin_node, self.end_node]:
                 s.append(n.base)
-                #if len(n.info) >= min_cov:
                 if n.weight >= min_cov:
                     cov_good.append("1")
                 else:
@@ -601,7 +621,23 @@ cdef class AlnGraph(object):
             else:
                 ent = - p*log(p) - (1-p)*log(1-p)
 
-            node_entropy.append( [ node_id, node, ent ] )
+            n_cov = node.weight
+            if node.is_backbone == True:
+                n_cov -= 1
+            if node.best_out_edge != None:
+                e_out_count = node.best_out_edge.count
+            else:
+                e_out_count = 0
+            if node.best_in_edge != None:
+                e_in_count = node.best_in_edge.count
+            else:
+                e_in_count = 0
+
+            if node.backbone_node in backbone_node_to_pos:
+                backbone_pos =  backbone_node_to_pos[node.backbone_node]
+            else:
+                backbone_pos = -1
+            node_entropy.append( [ node_id, node, ent, ( n_cov, e_in_count, e_out_count, node.backbone_node.coverage, backbone_pos ) ] )
 
         node_entropy.sort( key = lambda x:-x[2] )
 

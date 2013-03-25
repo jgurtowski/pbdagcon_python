@@ -149,7 +149,7 @@ def get_consensus(read_fn, init_ref, consensus_fn, consens_seq_name,
 
         if len(s) < 100:
             return s
-        g = constructe_aln_graph_from_fasta(read_fn, consensus_fn, max_num_reads = max_num_reads, remove_in_del = False, max_cov = max_cov, nproc = nproc)
+        g = constructe_aln_graph_from_fasta(read_fn, consensus_fn, max_num_reads = max_num_reads, remove_in_del = True, max_cov = max_cov, nproc = nproc)
         s, c = g.generate_consensus(min_cov = min_cov)
         if mark_lower_case:
             s = mark_lower_case_base(g, entropy_th = entropy_th)
@@ -158,55 +158,56 @@ def get_consensus(read_fn, init_ref, consensus_fn, consens_seq_name,
             print >>f, s
     return s
 
-
 def output_dag_info(aln_graph, out_file_name):
 
     with open(out_file_name,"w") as f:
         read_ids = []
         read_ids_set = set()
         for n in sorted_nodes(aln_graph):
-            for r in n.info:
+            for r, p in n.get_info():
                 if r not in read_ids_set:
                     read_ids.append(r)
                     read_ids_set.add(r)
-
 
         read_id_to_pos = dict(( (x[1],x[0]) for x in enumerate(list(read_ids))) )
         for read_id in read_ids:
             pileup_pos = read_id_to_pos[read_id]
             print >>f, "\t".join( [ "R", "%d" % pileup_pos, read_id ] )
 
-        backbone_node_to_pos =  aln_graph.backbone_node_to_pos 
+        backbone_node_to_pos =  aln_graph.get_backbone_node_to_pos()
         ne, hne = aln_graph.get_high_entropy_nodes(coverage_th=0)
-        node_to_entropy = dict( [ (v[1],v[2]) for v in ne ] ) 
+        node_to_entropy = dict( [ ( v[1], "\t".join( [ str(x) for x in [v[2]] + list( v[3] ) ] ) )  for v in ne ] ) 
 
         data = []
         consensus_pos = 0
+        consensus_path = aln_graph.get_consensus_path()
         for n in sorted_nodes(aln_graph):
             s = ["."] * len(read_id_to_pos)
-            for r in n.info:
-                s[read_id_to_pos[r]] = n.base
+            for r, pos in n.get_info():
+                s[read_id_to_pos[r]] = n.get_base()
 
-            if n.base not in ["B", "E"]:
-                bpos = backbone_node_to_pos[n.backbone_node]
+            if n.get_base() not in ["B", "E"]:
+                bpos = backbone_node_to_pos[n.get_backbone_node()]
             entropy_th = 0
             ent = node_to_entropy[n] if n in node_to_entropy else 0
-            if n.base not in ["B","E"] and ent >= entropy_th:
-                data.append ( ( n.ID, consensus_pos, backbone_node_to_pos[n.backbone_node],\
-                      "+" if n in aln_graph.consensus_path else "-",\
-                      "+" if n.is_backbone == True else "-",\
-                      n.base, "".join(s), len(n.info),\
-                      n.backbone_node.coverage,\
+            if n.get_base() not in ["B","E"] and ent >= entropy_th:
+                data.append ( ( n.get_ID(), consensus_pos, backbone_node_to_pos[n.get_backbone_node()],\
+                      "+" if n in consensus_path else "-",\
+                      "+" if n.get_is_backbone() == True else "-",\
+                      n.get_base(), "".join(s), n.get_weight(),\
+                      n.get_backbone_node().get_coverage(),\
                       node_to_entropy[n] if n in node_to_entropy else "-" ) )
-                if n in aln_graph.consensus_path:
+                if n in consensus_path:
                     consensus_pos += 1
 
         for l in data:
             print >>f, "N"+"\t"+"\t".join([str(c) for c in l])
 
-        for e_id in aln_graph.edges:
-            e = aln_graph.edges[e_id]
-            print >> f, "\t".join( ["E", "%d" % e_id, "%d" % e.in_node.ID, "%d" % e.out_node.ID, "%d" % e.count ] )
+        aln_edges = aln_graph.get_edges()
+
+        for e_id in aln_edges:
+            e = aln_edges[e_id]
+            print >> f, "\t".join( ["E", "%d" % e_id, "%d" % e.get_in_node().get_ID(), "%d" % e.get_out_node().get_ID(), "%d" % e.get_count() ] )
 
 def generate_consensus(input_fasta_name, 
                        ref_fasta_name, 

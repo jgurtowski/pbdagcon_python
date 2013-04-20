@@ -175,6 +175,33 @@ cdef class AlnNode(object):
     def get_weight(self):
         return self.weight
 
+    def get_in_nodes(self):
+        in_nodes = [ e.get_in_node() for e in self._in_edges ]
+        return in_nodes
+
+    def get_out_nodes(self):
+        out_nodes = [ e.get_out_node() for e in self._out_edges ]
+        return out_nodes
+
+    def get_best_in_node(self):
+        if len(self._in_edges) > 0:
+            edge_count = [ (e, e.get_count()) for e in self._in_edges ]
+            edge_count.sort( key = lambda x:x[1])
+            e = edge_count[-1][0]
+            return e.get_in_node()
+        else:
+            return None
+
+    def get_best_out_node(self):
+        if len(self._out_edges) > 0:
+            edge_count = [ (e, e.get_count()) for e in self._out_edges ]
+            edge_count.sort( key = lambda x:x[1])
+            e = edge_count[-1][0]
+            return e.get_out_node()
+        else:
+            return None
+
+
     def __repr__(self):
         return "(node_id:%d, base:%s, b:%s, w:%d, c:%d)" % (self.ID, self.base, self.is_backbone, self.weight, self.coverage )
 
@@ -535,7 +562,8 @@ cdef class AlnGraph(object):
         return consensus_path
 
 
-    def generate_consensus(self, min_cov = 8):
+    def generate_consensus(self, min_cov = 8, compute_qv_data = False):
+
         cdef AlnNode n
 
         self.merge_nodes()
@@ -547,25 +575,40 @@ cdef class AlnGraph(object):
         c = []
         cov_good = []
         for n in self.consensus_path:
-            if n not in [self.begin_node, self.end_node]:
-                s.append(n.base)
-                if n.weight >= min_cov:
-                    cov_good.append("1")
-                else:
-                    cov_good.append("0")
+            if n in [self.begin_node, self.end_node]:
+                continue
 
-                rn = n.weight
-                if n.is_backbone == True:
-                    rn -= 1
-                if n.best_out_edge != None:
-                    en = n.best_out_edge.count
-                else:
-                    en = 0
+            s.append(n.base)
+            if n.weight >= min_cov:
+                cov_good.append("1")
+            else:
+                cov_good.append("0")
+
+            if not compute_qv_data:
+                continue
+
+            rn = n.weight
+            if n.is_backbone == True:
+                rn -= 1
+
+            overlap_count1 = 0
+            overlap_count2 = 0
+            if n.best_out_edge != None:
+                next_n = n.best_out_edge.get_out_node()
+                out_nodes = n.get_out_nodes()
+                n_in_nodes = next_n.get_in_nodes()
+                overlap_nodes = set(out_nodes) & set(n_in_nodes) 
+                overlap_count1 = sum( [ (<AlnNode> o_node).weight for o_node in overlap_nodes] )
+
                 if n.best_in_edge != None:
-                    en2 = n.best_in_edge.count
-                else:
-                    en2 = 0
-                c.append( ( rn, en2, en, n.backbone_node.coverage ) )
+                    pre_n = n.best_in_edge.get_in_node()
+                    p_out_nodes = pre_n.get_out_nodes()
+                    #n_in_nodes = next_n.get_in_nodes()
+                    overlap_nodes = set(p_out_nodes) & set(n_in_nodes) 
+                    overlap_count2 = sum( [ (<AlnNode> o_node).weight for o_node in overlap_nodes] )
+                    overlap_count2 -= n.weight
+
+            c.append( ( rn, overlap_count1, overlap_count2, n.backbone_node.coverage ) )
 
         s = "".join(s)
         cov_good = "".join(cov_good)

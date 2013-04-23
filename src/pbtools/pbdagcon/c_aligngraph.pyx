@@ -529,7 +529,7 @@ cdef class AlnGraph(object):
                 if out_node.is_backbone == True and out_node.weight == 1:
                     new_score = score  - 10
                 else:
-                    new_score = out_edge.count  - backbone_node_coverage * 0.5 + score
+                    new_score = out_edge.count  - backbone_node_coverage * 0.4 + score
                 if new_score > best_score or best_score == None:
                     best_edge = out_edge
                     best_score = new_score
@@ -565,6 +565,8 @@ cdef class AlnGraph(object):
     def generate_consensus(self, min_cov = 8, compute_qv_data = False):
 
         cdef AlnNode n
+        cdef AlnNode pre_n
+        cdef AlnNode next_n
 
         self.merge_nodes()
 
@@ -593,6 +595,7 @@ cdef class AlnGraph(object):
 
             overlap_count1 = 0
             overlap_count2 = 0
+            passing_count = 0
             if n.best_out_edge != None:
                 next_n = n.best_out_edge.get_out_node()
                 out_nodes = n.get_out_nodes()
@@ -607,8 +610,10 @@ cdef class AlnGraph(object):
                     overlap_nodes = set(p_out_nodes) & set(n_in_nodes) 
                     overlap_count2 = sum( [ (<AlnNode> o_node).weight for o_node in overlap_nodes] )
                     overlap_count2 -= n.weight
+                    if (pre_n.ID, next_n.ID) in self.nodes_to_edge:
+                        passing_count = (<AlnEdge> (self.nodes_to_edge[ (pre_n.ID, next_n.ID) ])).count
 
-            c.append( ( rn, overlap_count1, overlap_count2, n.backbone_node.coverage ) )
+            c.append( ( passing_count, overlap_count1, overlap_count2, n.backbone_node.coverage ) )
 
         s = "".join(s)
         cov_good = "".join(cov_good)

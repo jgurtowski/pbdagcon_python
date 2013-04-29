@@ -50,7 +50,7 @@ from pbcore.util.ToolRunner import PBMultiToolRunner
 from pbcore.io import FastaReader
 
 from pbtools.pbdagcon.c_aligngraph import *
-from pbtools.pbdagcon.c_utils import constructe_aln_graph_from_fasta 
+from pbtools.pbdagcon.c_utils import construct_aln_graph_from_fasta 
 from pbtools.pbdagcon.c_utils import sorted_nodes
 from pbtools.pbdagcon.c_utils import best_template_by_blasr
 from pbtools.pbdagcon.c_utils import clustering_read
@@ -120,7 +120,7 @@ def get_consensus(read_fn, init_ref, consensus_fn, consens_seq_name,
                   mark_lower_case = False,
                   use_read_id = False):
 
-    g = constructe_aln_graph_from_fasta(read_fn, init_ref, max_num_reads = max_num_reads, remove_in_del = False, max_cov = max_cov, nproc = nproc)
+    g = construct_aln_graph_from_fasta(read_fn, init_ref, max_num_reads = max_num_reads, remove_in_del = False, max_cov = max_cov, nproc = nproc)
     s, c = g.generate_consensus(min_cov = min_cov)
 
 
@@ -132,7 +132,7 @@ def get_consensus(read_fn, init_ref, consensus_fn, consens_seq_name,
         for i in range(min_iteration-2):
             if len(s) < 100:
                 return s
-            g = constructe_aln_graph_from_fasta(read_fn, consensus_fn, max_num_reads = max_num_reads, remove_in_del = False, max_cov = max_cov, nproc = nproc, use_read_id = use_read_id)
+            g = construct_aln_graph_from_fasta(read_fn, consensus_fn, max_num_reads = max_num_reads, remove_in_del = False, max_cov = max_cov, nproc = nproc, use_read_id = use_read_id)
             s, c = g.generate_consensus(min_cov = min_cov)
             with open(consensus_fn,"w") as f:
                 print >>f, ">"+consens_seq_name
@@ -141,7 +141,59 @@ def get_consensus(read_fn, init_ref, consensus_fn, consens_seq_name,
         if hp_correction:
             if len(s) < 100:
                 return s
-            g = constructe_aln_graph_from_fasta(read_fn, consensus_fn, max_num_reads = max_num_reads, remove_in_del = False, max_cov = max_cov, nproc = nproc)
+            g = construct_aln_graph_from_fasta(read_fn, consensus_fn, max_num_reads = max_num_reads, remove_in_del = False, max_cov = max_cov, nproc = nproc)
+
+            s = detect_missing(g, entropy_th = entropy_th)
+
+            with open(consensus_fn,"w") as f:
+                print >>f, ">"+consens_seq_name
+                print >>f, s.upper()
+
+        if len(s) < 100:
+            return s
+        g = construct_aln_graph_from_fasta(read_fn, consensus_fn, max_num_reads = max_num_reads, remove_in_del = True, max_cov = max_cov, nproc = nproc)
+        s, c = g.generate_consensus(min_cov = min_cov)
+
+        if mark_lower_case:
+            s = mark_lower_case_base(g, entropy_th = entropy_th)
+
+        with open(consensus_fn,"w") as f:
+            print >>f, ">"+consens_seq_name
+            print >>f, s
+
+    return s
+
+def get_all_consensus(read_fn, init_ref, consensus_fn, consens_seq_name,
+                      hp_correction = False, 
+                      min_iteration = 4, 
+                      max_num_reads = 150,
+                      entropy_th = 0.65,
+                      min_cov = 8,
+                      max_cov = 60,
+                      nproc = 4):
+
+    g = construct_aln_graph_from_fasta(read_fn, init_ref, max_num_reads = max_num_reads, remove_in_del = False, max_cov = max_cov, nproc = nproc)
+    s, c = g.generate_consensus(min_cov = 0)
+
+
+    with open(consensus_fn,"w") as f:
+        print >>f, ">"+consens_seq_name
+        print >>f, s.upper()
+
+    if min_iteration > 1:
+        for i in range(min_iteration-2):
+            if len(s) < 100:
+                return s
+            g = construct_aln_graph_from_fasta(read_fn, consensus_fn, max_num_reads = max_num_reads, remove_in_del = False, max_cov = max_cov, nproc = nproc)
+            s, c = g.generate_consensus(min_cov = 0)
+            with open(consensus_fn,"w") as f:
+                print >>f, ">"+consens_seq_name
+                print >>f, s.upper()
+
+        if hp_correction:
+            if len(s) < 100:
+                return s
+            g = construct_aln_graph_from_fasta(read_fn, consensus_fn, max_num_reads = max_num_reads, remove_in_del = False, max_cov = max_cov, nproc = nproc)
             s = detect_missing(g, entropy_th = entropy_th)
             with open(consensus_fn,"w") as f:
                 print >>f, ">"+consens_seq_name
@@ -149,14 +201,15 @@ def get_consensus(read_fn, init_ref, consensus_fn, consens_seq_name,
 
         if len(s) < 100:
             return s
-        g = constructe_aln_graph_from_fasta(read_fn, consensus_fn, max_num_reads = max_num_reads, remove_in_del = True, max_cov = max_cov, nproc = nproc)
-        s, c = g.generate_consensus(min_cov = min_cov)
-        if mark_lower_case:
-            s = mark_lower_case_base(g, entropy_th = entropy_th)
-        with open(consensus_fn,"w") as f:
-            print >>f, ">"+consens_seq_name
-            print >>f, s
-    return s
+    g = construct_aln_graph_from_fasta(read_fn, consensus_fn, max_num_reads = max_num_reads, remove_in_del = True, max_cov = max_cov, nproc = nproc)
+    all_consensus = g.generate_all_consensus(min_cov = min_cov)
+
+    #if mark_lower_case:
+    #    s = mark_lower_case_base(g, entropy_th = entropy_th)
+    #with open(consensus_fn,"w") as f:
+    #    print >>f, ">"+consens_seq_name
+    #    print >>f, s
+    return all_consensus 
 
 def output_dag_info(aln_graph, out_file_name):
 
@@ -239,5 +292,35 @@ def generate_consensus(input_fasta_name,
                       mark_lower_case=mark_lower_case)
     if dump_dag_info == True:
         output_dag_info(g, "%s_dag.dat" % prefix)
+
+    return s
+
+def generate_all_consensus(input_fasta_name, 
+                       ref_fasta_name, 
+                       prefix, 
+                       consensus_name, 
+                       hpFix, 
+                       min_iteration,
+                       max_num_reads,
+                       entropy_th,
+                       dump_dag_info,
+                       min_cov,
+                       max_cov,
+                       mark_lower_case,
+                       nproc):
+
+    normalize_fasta(input_fasta_name, ref_fasta_name, "%s_input.fa" % prefix, nproc)
+
+    s = get_all_consensus("%s_input.fa" % prefix, 
+                      ref_fasta_name, 
+                      "%s.fa" % prefix, 
+                      consensus_name,
+                      hp_correction = hpFix,
+                      min_iteration = min_iteration,
+                      max_num_reads = max_num_reads,
+                      entropy_th = entropy_th,
+                      min_cov = min_cov,
+                      max_cov = max_cov,
+                      nproc = nproc)
 
     return s

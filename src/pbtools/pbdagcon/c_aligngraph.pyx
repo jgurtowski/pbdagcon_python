@@ -561,8 +561,7 @@ cdef class AlnGraph(object):
 
         return consensus_path
 
-
-    def generate_consensus(self, min_cov = 8, compute_qv_data = False):
+    def generate_all_consensus(self, min_cov = 8, compute_qv_data = False):
 
         cdef AlnNode n
         cdef AlnNode pre_n
@@ -621,23 +620,35 @@ cdef class AlnGraph(object):
         p = re.compile("1+")
         best_range = (0, 0)
         best_l = 0
+        all_consensus_range = []
         for m in p.finditer(cov_good):
             b, e = m.start(), m.end()
-            if e-b > best_l:
-                best_range = (b,e)
-                best_l = e - b
+            if e - b > 0:
+                all_consensus_range.append( (b, e) )
 
-        b,e = best_range
+        all_consensus_range.sort(key=lambda x:x[0]-x[1])
+        all_consensus = []
 
-        if e-b != 0:
-            self.consensus_str = s[b:e]
-            c = c[b:e]
+        for c_range in all_consensus_range:
+            b, e = c_range
+            if compute_qv_data:
+                all_consensus.append( (s[b:e], c[b:e]) )
+            else:
+                all_consensus.append( (s[b:e], None) )
+
+        return all_consensus
+
+    def generate_consensus(self, min_cov = 8, compute_qv_data = False):
+
+        all_consensus = self.generate_all_consensus( min_cov = min_cov, compute_qv_data = compute_qv_data)
+        if len(all_consensus) > 0:
+            self.consensus_str = all_consensus[0][0]
+            qv_data = all_consensus[0][1]
         else:
             self.consensus_str = ""
-            c = []
-
-        return self.consensus_str, c
-
+            qv_data = []
+        
+        return self.consensus_str, qv_data
 
     def get_high_entropy_nodes(self, 
                                ignore_backbone = False, 
@@ -757,10 +768,10 @@ cdef class AlnGraph(object):
 
         return read_to_nodes, high_entropy_nodes
 
-    def output_consensus_fasta(self,  fn, rID):
-        f = open(fn, "a")
-        print >>f,">%s" % rID
-        for i in range(0, len(self.consensus_str), 60):
-            print >>f, self.consensus_str[i:i+60]
-        f.close()
+    #def output_consensus_fasta(self,  fn, rID):
+    #    f = open(fn, "a")
+    #    print >>f,">%s" % rID
+    #    for i in range(0, len(self.consensus_str), 60):
+    #        print >>f, self.consensus_str[i:i+60]
+    #    f.close()
 

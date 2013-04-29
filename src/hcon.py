@@ -294,9 +294,9 @@ class HapConsensus(PBMultiToolRunner):
                                      entropy_th = self.args.entropy_th)
 
     def run(self):
-        if self.args.subName == 'd':
+        if self.args.subCommand == 'd':
             self.denovo_consensus()
-        elif self.args.subName == 'r':
+        elif self.args.subCommand == 'r':
             self.ref_consensus()
 
 if __name__ == '__main__':    

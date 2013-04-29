@@ -224,17 +224,17 @@ class HapConsensus(PBMultiToolRunner):
                 "It is not optimized for getting consensus for larger templates."]
         super(HapConsensus, self).__init__('\n'.join(desc))
 
-        subparsers = self.getSubParsers()
+        subparsers = self.subParsers
 
         desc = ['using self-self alignment for getting the seed sequence for constructing consensus']
         parser_d = subparsers.add_parser('d', help = "generate the haplotype consensus using the alignments between the input sequneces to find seed sequence",
-                                         description = "\n".join(desc), parents = [self.parser])
+                                         description = "\n".join(desc))
         parser_d.add_argument('input', metavar = 'input.fasta',
                               help = 'an input fasta file')
         
         desc = ['using a reference file as seed for consensus']
         parser_r = subparsers.add_parser('r', help = "using a reference fasta as the seed sequence",
-                                         description = "\n".join(desc), parents = [self.parser])
+                                         description = "\n".join(desc))
         parser_r.add_argument('input', metavar = 'input.fasta',
                               help = 'an input fasta file')
         parser_r.add_argument('ref', metavar = 'ref.fasta',

@@ -310,9 +310,9 @@ class Consensus(PBMultiToolRunner):
 
     def run(self):
         logging.debug("Arguments" + str(self.args))
-        if self.args.subName == 'd':
+        if self.args.subCommand == 'd':
             self.denovoConsensus()
-        elif self.args.subName == 'r':
+        elif self.args.subCommand == 'r':
             self.refConsensus()
 
 if __name__ == '__main__':    

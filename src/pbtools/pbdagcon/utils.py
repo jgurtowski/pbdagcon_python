@@ -157,7 +157,7 @@ def get_aln_array(aln_iter,
 
     return alns
 
-def constructe_aln_graph_from_fasta(read_fasta_fn, 
+def construct_aln_graph_from_fasta(read_fasta_fn, 
                                     backbone_fasta_fn, 
                                     max_num_reads = None, 
                                     remove_in_del = False, 

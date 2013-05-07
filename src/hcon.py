@@ -53,7 +53,7 @@ from pbcore.util.ToolRunner import PBMultiToolRunner
 from pbcore.io import FastaReader
 
 from pbtools.pbdagcon.aligngraph import *
-from pbtools.pbdagcon.utils import constructe_aln_graph_from_fasta 
+from pbtools.pbdagcon.utils import construct_aln_graph_from_fasta 
 from pbtools.pbdagcon.utils import sorted_nodes
 from pbtools.pbdagcon.utils import best_template_by_blasr
 from pbtools.pbdagcon.utils import clustering_read
@@ -114,27 +114,27 @@ def get_consensus(read_fn, init_ref, consensus_fn, consens_seq_name,
                   min_iteration = 4, 
                   max_num_reads = 150,
                   entropy_th = 0.65):
-    g = constructe_aln_graph_from_fasta(read_fn, init_ref, max_num_reads = max_num_reads, remove_in_del = False)
+    g = construct_aln_graph_from_fasta(read_fn, init_ref, max_num_reads = max_num_reads, remove_in_del = False)
     s,c = g.generate_consensus()
     with open(consensus_fn,"w") as f:
         print >>f, ">"+consens_seq_name
         print >>f, s.upper()
     if min_iteration > 1:
         for i in range(min_iteration-2):
-            g = constructe_aln_graph_from_fasta(read_fn, consensus_fn, max_num_reads = max_num_reads, remove_in_del = False)
+            g = construct_aln_graph_from_fasta(read_fn, consensus_fn, max_num_reads = max_num_reads, remove_in_del = False)
             s,c = g.generate_consensus()
             with open(consensus_fn,"w") as f:
                 print >>f, ">"+consens_seq_name
                 print >>f, s.upper()
 
         if hp_correction:
-            g = constructe_aln_graph_from_fasta(read_fn, consensus_fn, max_num_reads = max_num_reads, remove_in_del = False)
+            g = construct_aln_graph_from_fasta(read_fn, consensus_fn, max_num_reads = max_num_reads, remove_in_del = False)
             s = detect_missing(g, entropy_th = entropy_th)
             with open(consensus_fn,"w") as f:
                 print >>f, ">"+consens_seq_name
                 print >>f, s.upper()
 
-        g = constructe_aln_graph_from_fasta(read_fn, consensus_fn, max_num_reads = max_num_reads, remove_in_del = False)
+        g = construct_aln_graph_from_fasta(read_fn, consensus_fn, max_num_reads = max_num_reads, remove_in_del = False)
         s,c = g.generate_consensus()
         s = mark_lower_case_base(g, entropy_th = entropy_th)
         with open(consensus_fn,"w") as f:
@@ -161,7 +161,7 @@ def generate_haplotype_consensus(inpute_fasta_name, ref_fasta_name, prefix, cons
                   max_num_reads = max_num_reads,
                   entropy_th = entropy_th)
 
-    g = constructe_aln_graph_from_fasta("%s_input.fa" % prefix, 
+    g = construct_aln_graph_from_fasta("%s_input.fa" % prefix, 
                                "%s.fa" % prefix, 
                                ref_group=consensus_name, 
                                max_num_reads = max_num_reads, 
@@ -224,17 +224,17 @@ class HapConsensus(PBMultiToolRunner):
                 "It is not optimized for getting consensus for larger templates."]
         super(HapConsensus, self).__init__('\n'.join(desc))
 
-        subparsers = self.getSubParsers()
+        subparsers = self.subParsers
 
         desc = ['using self-self alignment for getting the seed sequence for constructing consensus']
         parser_d = subparsers.add_parser('d', help = "generate the haplotype consensus using the alignments between the input sequneces to find seed sequence",
-                                         description = "\n".join(desc), parents = [self.parser])
+                                         description = "\n".join(desc))
         parser_d.add_argument('input', metavar = 'input.fasta',
                               help = 'an input fasta file')
         
         desc = ['using a reference file as seed for consensus']
         parser_r = subparsers.add_parser('r', help = "using a reference fasta as the seed sequence",
-                                         description = "\n".join(desc), parents = [self.parser])
+                                         description = "\n".join(desc))
         parser_r.add_argument('input', metavar = 'input.fasta',
                               help = 'an input fasta file')
         parser_r.add_argument('ref', metavar = 'ref.fasta',
@@ -294,9 +294,9 @@ class HapConsensus(PBMultiToolRunner):
                                      entropy_th = self.args.entropy_th)
 
     def run(self):
-        if self.args.subName == 'd':
+        if self.args.subCommand == 'd':
             self.denovo_consensus()
-        elif self.args.subName == 'r':
+        elif self.args.subCommand == 'r':
             self.ref_consensus()
 
 if __name__ == '__main__':    

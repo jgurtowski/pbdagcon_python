@@ -175,6 +175,33 @@ cdef class AlnNode(object):
     def get_weight(self):
         return self.weight
 
+    def get_in_nodes(self):
+        in_nodes = [ e.get_in_node() for e in self._in_edges ]
+        return in_nodes
+
+    def get_out_nodes(self):
+        out_nodes = [ e.get_out_node() for e in self._out_edges ]
+        return out_nodes
+
+    def get_best_in_node(self):
+        if len(self._in_edges) > 0:
+            edge_count = [ (e, e.get_count()) for e in self._in_edges ]
+            edge_count.sort( key = lambda x:x[1])
+            e = edge_count[-1][0]
+            return e.get_in_node()
+        else:
+            return None
+
+    def get_best_out_node(self):
+        if len(self._out_edges) > 0:
+            edge_count = [ (e, e.get_count()) for e in self._out_edges ]
+            edge_count.sort( key = lambda x:x[1])
+            e = edge_count[-1][0]
+            return e.get_out_node()
+        else:
+            return None
+
+
     def __repr__(self):
         return "(node_id:%d, base:%s, b:%s, w:%d, c:%d)" % (self.ID, self.base, self.is_backbone, self.weight, self.coverage )
 
@@ -502,7 +529,7 @@ cdef class AlnGraph(object):
                 if out_node.is_backbone == True and out_node.weight == 1:
                     new_score = score  - 10
                 else:
-                    new_score = out_edge.count  - backbone_node_coverage * 0.5 + score
+                    new_score = out_edge.count  - backbone_node_coverage * 0.4 + score
                 if new_score > best_score or best_score == None:
                     best_edge = out_edge
                     best_score = new_score
@@ -534,9 +561,11 @@ cdef class AlnGraph(object):
 
         return consensus_path
 
+    def generate_all_consensus(self, min_cov = 8, compute_qv_data = False):
 
-    def generate_consensus(self, min_cov = 8):
         cdef AlnNode n
+        cdef AlnNode pre_n
+        cdef AlnNode next_n
 
         self.merge_nodes()
 
@@ -547,25 +576,43 @@ cdef class AlnGraph(object):
         c = []
         cov_good = []
         for n in self.consensus_path:
-            if n not in [self.begin_node, self.end_node]:
-                s.append(n.base)
-                if n.weight >= min_cov:
-                    cov_good.append("1")
-                else:
-                    cov_good.append("0")
+            if n in [self.begin_node, self.end_node]:
+                continue
 
-                rn = n.weight
-                if n.is_backbone == True:
-                    rn -= 1
-                if n.best_out_edge != None:
-                    en = n.best_out_edge.count
-                else:
-                    en = 0
+            s.append(n.base)
+            if n.weight >= min_cov:
+                cov_good.append("1")
+            else:
+                cov_good.append("0")
+
+            if not compute_qv_data:
+                continue
+
+            rn = n.weight
+            if n.is_backbone == True:
+                rn -= 1
+
+            overlap_count1 = 0
+            overlap_count2 = 0
+            passing_count = 0
+            if n.best_out_edge != None:
+                next_n = n.best_out_edge.get_out_node()
+                out_nodes = n.get_out_nodes()
+                n_in_nodes = next_n.get_in_nodes()
+                overlap_nodes = set(out_nodes) & set(n_in_nodes) 
+                overlap_count1 = sum( [ (<AlnNode> o_node).weight for o_node in overlap_nodes] )
+
                 if n.best_in_edge != None:
-                    en2 = n.best_in_edge.count
-                else:
-                    en2 = 0
-                c.append( ( rn, en2, en, n.backbone_node.coverage ) )
+                    pre_n = n.best_in_edge.get_in_node()
+                    p_out_nodes = pre_n.get_out_nodes()
+                    #n_in_nodes = next_n.get_in_nodes()
+                    overlap_nodes = set(p_out_nodes) & set(n_in_nodes) 
+                    overlap_count2 = sum( [ (<AlnNode> o_node).weight for o_node in overlap_nodes] )
+                    overlap_count2 -= n.weight
+                    if (pre_n.ID, next_n.ID) in self.nodes_to_edge:
+                        passing_count = (<AlnEdge> (self.nodes_to_edge[ (pre_n.ID, next_n.ID) ])).count
+
+            c.append( ( passing_count, overlap_count1, overlap_count2, n.backbone_node.coverage ) )
 
         s = "".join(s)
         cov_good = "".join(cov_good)
@@ -573,23 +620,35 @@ cdef class AlnGraph(object):
         p = re.compile("1+")
         best_range = (0, 0)
         best_l = 0
+        all_consensus_range = []
         for m in p.finditer(cov_good):
             b, e = m.start(), m.end()
-            if e-b > best_l:
-                best_range = (b,e)
-                best_l = e - b
+            if e - b > 0:
+                all_consensus_range.append( (b, e) )
 
-        b,e = best_range
+        all_consensus_range.sort(key=lambda x:x[0]-x[1])
+        all_consensus = []
 
-        if e-b != 0:
-            self.consensus_str = s[b:e]
-            c = c[b:e]
+        for c_range in all_consensus_range:
+            b, e = c_range
+            if compute_qv_data:
+                all_consensus.append( (s[b:e], c[b:e]) )
+            else:
+                all_consensus.append( (s[b:e], None) )
+
+        return all_consensus
+
+    def generate_consensus(self, min_cov = 8, compute_qv_data = False):
+
+        all_consensus = self.generate_all_consensus( min_cov = min_cov, compute_qv_data = compute_qv_data)
+        if len(all_consensus) > 0:
+            self.consensus_str = all_consensus[0][0]
+            qv_data = all_consensus[0][1]
         else:
             self.consensus_str = ""
-            c = []
-
-        return self.consensus_str, c
-
+            qv_data = []
+        
+        return self.consensus_str, qv_data
 
     def get_high_entropy_nodes(self, 
                                ignore_backbone = False, 
@@ -709,10 +768,10 @@ cdef class AlnGraph(object):
 
         return read_to_nodes, high_entropy_nodes
 
-    def output_consensus_fasta(self,  fn, rID):
-        f = open(fn, "a")
-        print >>f,">%s" % rID
-        for i in range(0, len(self.consensus_str), 60):
-            print >>f, self.consensus_str[i:i+60]
-        f.close()
+    #def output_consensus_fasta(self,  fn, rID):
+    #    f = open(fn, "a")
+    #    print >>f,">%s" % rID
+    #    for i in range(0, len(self.consensus_str), 60):
+    #        print >>f, self.consensus_str[i:i+60]
+    #    f.close()
 

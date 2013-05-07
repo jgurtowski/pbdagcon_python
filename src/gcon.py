@@ -53,7 +53,7 @@ from pbcore.util.ToolRunner import PBMultiToolRunner
 from pbcore.io import FastaReader
 
 from pbtools.pbdagcon.aligngraph import *
-from pbtools.pbdagcon.utils import constructe_aln_graph_from_fasta 
+from pbtools.pbdagcon.utils import construct_aln_graph_from_fasta 
 from pbtools.pbdagcon.utils import sorted_nodes
 from pbtools.pbdagcon.utils import best_template_by_blasr
 from pbtools.pbdagcon.utils import clustering_read
@@ -116,7 +116,7 @@ def get_consensus(read_fn, init_ref, consensus_fn, consens_seq_name,
                   entropy_th = 0.65,
                   min_cov = 8):
 
-    g = constructe_aln_graph_from_fasta(read_fn, init_ref, max_num_reads = max_num_reads, remove_in_del = False)
+    g = construct_aln_graph_from_fasta(read_fn, init_ref, max_num_reads = max_num_reads, remove_in_del = False)
     s,c = g.generate_consensus(min_cov = min_cov)
     with open(consensus_fn,"w") as f:
         print >>f, ">"+consens_seq_name
@@ -125,20 +125,20 @@ def get_consensus(read_fn, init_ref, consensus_fn, consens_seq_name,
     if min_iteration > 1:
         for j in range(2):
             for i in range(min_iteration-2):
-                g = constructe_aln_graph_from_fasta(read_fn, consensus_fn, max_num_reads = max_num_reads, remove_in_del = False)
+                g = construct_aln_graph_from_fasta(read_fn, consensus_fn, max_num_reads = max_num_reads, remove_in_del = False)
                 s,c = g.generate_consensus(min_cov = min_cov)
                 with open(consensus_fn,"w") as f:
                     print >>f, ">"+consens_seq_name
                     print >>f, s.upper()
 
             if hp_correction:
-                g = constructe_aln_graph_from_fasta(read_fn, consensus_fn, max_num_reads = max_num_reads, remove_in_del = False)
+                g = construct_aln_graph_from_fasta(read_fn, consensus_fn, max_num_reads = max_num_reads, remove_in_del = False)
                 s = detect_missing(g, entropy_th = entropy_th)
                 with open(consensus_fn,"w") as f:
                     print >>f, ">"+consens_seq_name
                     print >>f, s.upper()
 
-            g = constructe_aln_graph_from_fasta(read_fn, consensus_fn, max_num_reads = max_num_reads, remove_in_del = False)
+            g = construct_aln_graph_from_fasta(read_fn, consensus_fn, max_num_reads = max_num_reads, remove_in_del = False)
             s,c = g.generate_consensus(min_cov = min_cov)
             s = mark_lower_case_base(g, entropy_th = entropy_th)
             with open(consensus_fn,"w") as f:
@@ -232,17 +232,17 @@ class Consensus(PBMultiToolRunner):
                 "It is not optimized for getting consensus for larger templates."]
         super(Consensus, self).__init__('\n'.join(desc))
 
-        subparsers = self.getSubParsers()
+        subparsers = self.subParsers
 
         desc = ['using self-self alignment for getting the seed sequence for constructing consensus']
         parser_d = subparsers.add_parser('d', help = "generate consensus using the alignments between the input sequneces to find seed sequence",
-                                         description = "\n".join(desc), parents = [self.parser])
+                                         description = "\n".join(desc))
         parser_d.add_argument('input', metavar = 'input.fasta',
                               help = 'an input fasta file')
         
         desc = ['using a reference file as seed for consensus']
         parser_r = subparsers.add_parser('r', help = "using a reference fasta as the seed sequence",
-                                         description = "\n".join(desc), parents = [self.parser])
+                                         description = "\n".join(desc))
         parser_r.add_argument('input', metavar = 'input.fasta',
                               help = 'an input fasta file')
         parser_r.add_argument('ref', metavar = 'ref.fasta',
@@ -310,9 +310,9 @@ class Consensus(PBMultiToolRunner):
 
     def run(self):
         logging.debug("Arguments" + str(self.args))
-        if self.args.subName == 'd':
+        if self.args.subCommand == 'd':
             self.denovoConsensus()
-        elif self.args.subName == 'r':
+        elif self.args.subCommand == 'r':
             self.refConsensus()
 
 if __name__ == '__main__':    

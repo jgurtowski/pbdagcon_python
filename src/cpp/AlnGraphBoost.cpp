@@ -69,7 +69,7 @@ void AlnGraphBoost::addAln(Alignment& aln) {
         if (queryBase == targetBase) {
             _g[_bbMap[currVtx]].coverage++;
 
-            // XXX: for empty backbones
+            // NOTE: for empty backbones
             _g[_bbMap[currVtx]].base = targetBase;
 
             _g[currVtx].weight++;
@@ -80,7 +80,7 @@ void AlnGraphBoost::addAln(Alignment& aln) {
         } else if (queryBase == '-' && targetBase != '-') {
             _g[_bbMap[currVtx]].coverage++;
 
-            // XXX: for empty backbones
+            // NOTE: for empty backbones
             _g[_bbMap[currVtx]].base = targetBase;
 
             bbPos++;
@@ -292,6 +292,8 @@ const std::vector<AlnNode> AlnGraphBoost::bestPath() {
     std::map<VtxDesc, EdgeDesc> bestNodeScoreEdge;
     std::map<VtxDesc, float> nodeScore;
     std::queue<VtxDesc> seedNodes;
+
+    // start at the end and make our way backwards
     seedNodes.push(_exitVtx);
     nodeScore[_exitVtx] = 0.0f;
 
@@ -342,13 +344,14 @@ const std::vector<AlnNode> AlnGraphBoost::bestPath() {
                     notVisited++;
             }
             
-            // move onto the boost::target node after we visit all incoming edges for
-            // the boost::target node
+            // move onto the target node after we visit all incoming edges for
+            // the target node
             if (notVisited == 0)
                 seedNodes.push(inNode);
         }
     }
 
+    // construct the final best path
     VtxDesc prev = _enterVtx, next;
     std::vector<AlnNode> bpath;
     while (true) {

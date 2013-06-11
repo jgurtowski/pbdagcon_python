@@ -9,6 +9,9 @@ struct Alignment {
     // comforming offsets are 1-based
     uint32_t tstart;
 
+    // query id
+    std::string qid;
+
     // target id
     std::string tid;
 

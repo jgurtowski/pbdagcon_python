@@ -277,7 +277,7 @@ const std::string AlnGraphBoost::consensus() {
     std::string cns;
     for (const AlnNode& n : path) {
         if (n.base == _g[_enterVtx].base || n.base == _g[_exitVtx].base) 
-            continue; 
+            continue;
         cns += n.base;
     }
 

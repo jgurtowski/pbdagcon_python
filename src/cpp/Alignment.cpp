@@ -3,6 +3,7 @@
 #include <sstream>
 #include <string>
 #include <list>
+#include <vector>
 #include <cassert>
 #include "Alignment.hpp"
 
@@ -23,28 +24,22 @@ void Alignment::parse(std::istream& instrm) {
     std::getline(instrm, line);
     std::stringstream row(line);
     std::string col;
-    int nCol = 0;
-    char tStrand = '+';
+    std::vector<std::string> fields;
     while(std::getline(row, col, ' ')) {
         if (col == "") continue;
-        nCol++;
-        if (nCol == 6) {
-            tid = col;
-        } else if (nCol == 7) {
-            std::istringstream iss(col);
-            iss >> tlen;
-        } else if (nCol == 8) {
-            std::istringstream iss(col);
-            iss >> tstart;
-            tstart++;
-        } else if (nCol == 10) {
-            tStrand = col[0];
-        } else if (nCol == 17) {
-            qstr = tStrand == '-' ? revComp(col) : col;
-        } else if (nCol == 19) {
-            tstr = tStrand == '-' ? revComp(col) : col;
-        }
+        fields.push_back(col);
     }
+    if (fields.size() == 0) return;
+    qid = fields[0];
+    tid = fields[5];
+    std::istringstream iss6(fields[6]);
+    iss6 >> tlen;
+    std::istringstream iss7(fields[7]);
+    iss7 >> tstart;
+    tstart++;
+    char tStrand = fields[9][0];
+    qstr = tStrand == '-' ? revComp(fields[16]) : fields[16];
+    tstr = tStrand == '-' ? revComp(fields[18]) : fields[18];
 }
 
 std::istream& operator>>(std::istream& instrm, Alignment& data) {

@@ -22,7 +22,8 @@ struct AlnNode {
     char base; ///< DNA base: [ACTG]
     int coverage; ///< Number of reads align to this position, but not 
                   ///< necessarily match
-    int weight; ///< Number of reads that align *with the same base*
+    int weight; ///< Number of reads that align to this node *with the same base*, but not
+                ///< necessarily represented in the target.
     bool backbone; ///< Is this node based on the reference
     graphTraits::edge_descriptor bestInEdge; ///< Best scoring in edge
     graphTraits::edge_descriptor bestOutEdge; ///< Best scoring out edge

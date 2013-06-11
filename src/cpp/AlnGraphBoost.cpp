@@ -272,13 +272,34 @@ void AlnGraphBoost::reapNodes() {
     }
 }
 
-const std::string AlnGraphBoost::consensus() {
+const std::string AlnGraphBoost::consensus(int minWeight) {
+    // get the best scoring path
     std::vector<AlnNode> path = bestPath();
+
+    // consensus sequence
     std::string cns;
+
+    // track the longest consensus path meeting minCov
+    int beg = 0, bestBeg = 0, end = 0, bestEnd = 0, idx = 0;
+    bool metWeight = false;
     for (const AlnNode& n : path) {
         if (n.base == _g[_enterVtx].base || n.base == _g[_exitVtx].base) 
             continue;
+        
         cns += n.base;
+
+        // initial beginning of minimum weight section
+        if (!metWeight && n.weight > minWeight) {
+            beg = idx;
+        } else if (metWeight && n.weight < minWeight) {
+        // concluded minimum section weight, update if longest seen so far
+            end = idx;
+            if ((end - beg) > (bestEnd - bestBeg)) { 
+                bestBeg = beg;
+                bestEnd = end;
+            }
+        }
+        idx++;
     }
 
     return cns;

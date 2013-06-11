@@ -94,8 +94,11 @@ public:
     void reapNodes();
 
     /// Generates the consensus from the graph.  Must be called after
-    /// mergeNodes();
-    const std::string consensus();
+    /// mergeNodes(). Returns the longest contiguous consensus sequence where
+    /// each base meets the minimum weight requirement.
+    /// \param minWeight sets the minimum weight for each base in the consensus. 
+    ///        default = 0
+    const std::string consensus(int minWeight=0);
 
     /// Locates the optimal path through the graph.  Called by consensus()
     const std::vector<AlnNode> bestPath();

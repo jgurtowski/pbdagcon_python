@@ -11,10 +11,19 @@
 #include "Alignment.hpp"
 #include "AlnGraphBoost.hpp"
 
+void toFasta(std::string& targetId, AlnGraphBoost& g) {
+    g.mergeNodes();
+    std::string cns = g.consensus(8);
+    if (cns.length() == 0) return;
+
+    std::cout << ">" << targetId << std::endl;
+    std::cout << cns << std::endl;
+}
+
 // Takes an alignment file (currently blasr -m 5) sorted by target, 
 // generates a consensus for each target that has > 8x coverage and 
 // prints it to stdout in fasta format.
-void alnFileConsensus(const std::string alnFile) {
+void alnFileConsensus(const std::string alnFile, int minCov=8) {
     std::ifstream file(alnFile);
     int coverage = 0;
 
@@ -33,11 +42,8 @@ void alnFileConsensus(const std::string alnFile) {
     while (file >> aln) {
         if (aln.tid != targetId){
             // we're on to a new target, generate consensus ...
-            if (coverage > 8) {
-                ag.mergeNodes();
-                std::cout << ">" << targetId << std::endl;
-                std::cout << ag.consensus() << std::endl;
-            }
+            if (coverage > minCov)
+                toFasta(targetId, ag);
 
             // ... and then move on to the next target
             ag = AlnGraphBoost(aln.tlen);
@@ -55,11 +61,8 @@ void alnFileConsensus(const std::string alnFile) {
         coverage++;
     }
     // print out final target consensus
-    if (coverage > 8) {
-        ag.mergeNodes();
-        std::cout << ">" << targetId << std::endl;
-        std::cout << ag.consensus() << std::endl;
-    }
+    if (coverage > minCov) 
+        toFasta(targetId, ag);
 }
 
 int main(int argc, char* argv[]) {

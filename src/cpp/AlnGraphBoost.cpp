@@ -280,7 +280,7 @@ const std::string AlnGraphBoost::consensus(int minWeight) {
     std::string cns;
 
     // track the longest consensus path meeting mininum weight
-    int beg = 0, bestBeg = 0, end = 0, bestEnd = 0, idx = 0;
+    int offs = 0, bestOffs = 0, length = 0, idx = 0;
     bool metWeight = false;
     for (const AlnNode& n : path) {
         if (n.base == _g[_enterVtx].base || n.base == _g[_exitVtx].base) 
@@ -289,20 +289,21 @@ const std::string AlnGraphBoost::consensus(int minWeight) {
         cns += n.base;
 
         // initial beginning of minimum weight section
-        if (!metWeight && n.weight > minWeight) {
-            beg = idx;
+        if (!metWeight && n.weight >= minWeight) {
+            offs = idx;
+            metWeight = true;
         } else if (metWeight && n.weight < minWeight) {
         // concluded minimum weight section, update if longest seen so far
-            end = idx;
-            if ((end - beg) > (bestEnd - bestBeg)) { 
-                bestBeg = beg;
-                bestEnd = end;
+            if ((idx - offs) > length) { 
+                bestOffs = offs;
+                length = idx - offs;
             }
+            metWeight = false;
         }
         idx++;
     }
 
-    return cns;
+    return cns.substr(bestOffs, length);
 }
 
 const std::vector<AlnNode> AlnGraphBoost::bestPath() {

@@ -5,6 +5,12 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <log4cpp/Category.hh>
+#include <log4cpp/Appender.hh>
+#include <log4cpp/FileAppender.hh>
+#include <log4cpp/Layout.hh>
+#include <log4cpp/PatternLayout.hh>
+#include <log4cpp/Priority.hh>
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/graphviz.hpp>
@@ -24,6 +30,7 @@ void toFasta(std::string& targetId, AlnGraphBoost& g) {
 // generates a consensus for each target that has > 8x coverage and 
 // prints it to stdout in fasta format.
 void alnFileConsensus(const std::string alnFile, int minCov=8) {
+    log4cpp::Category& logger = log4cpp::Category::getRoot();
     std::ifstream file(alnFile);
     int coverage = 0;
 
@@ -34,6 +41,7 @@ void alnFileConsensus(const std::string alnFile, int minCov=8) {
     AlnGraphBoost ag(aln.tlen);
     uint32_t len = aln.tlen;
     if (aln.qid != targetId) {
+        logger.info("Processing target: %s, length: %d", targetId.c_str(), len);
         aln = normalizeGaps(aln);
         ag.addAln(aln);
         coverage++;
@@ -50,6 +58,7 @@ void alnFileConsensus(const std::string alnFile, int minCov=8) {
             len = aln.tlen; 
             targetId = aln.tid;
             coverage = 0;
+            logger.info("Processing target: %s, length: %d", targetId.c_str(), len);
         }
         // sanity check
         assert(aln.tlen = len);
@@ -66,6 +75,15 @@ void alnFileConsensus(const std::string alnFile, int minCov=8) {
 }
 
 int main(int argc, char* argv[]) {
+    // Setup the root logger to a file
+    log4cpp::Appender *fapp = new log4cpp::FileAppender("default", "gcon.log");
+    log4cpp::PatternLayout *layout = new log4cpp::PatternLayout();
+    layout->setConversionPattern("%d [%p] %m%n");
+    fapp->setLayout(layout); 
+    log4cpp::Category& root = log4cpp::Category::getRoot();
+    root.setPriority(log4cpp::Priority::INFO);
+    root.addAppender(fapp);
+
     if (argc == 2)
         alnFileConsensus(argv[1]);
         

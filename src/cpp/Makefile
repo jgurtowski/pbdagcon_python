@@ -9,14 +9,14 @@ all: gcon
 gcon: main.o AlnGraphBoost.o Alignment.o $(LOG4CPP)/src/.libs/liblog4cpp.a
 	$(CXX) -o gcon $^ -lpthread
 
-%.o: %.cpp
+%.o: %.cpp | $(LOG4CPP)/include/log4cpp/config.h
 	$(CXX) $(CXX_OPTS) -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
 
-$(LOG4CPP)/src/.libs/liblog4cpp.a: $(LOG4CPP)/config.log
-	$(MAKE) -C $(LOG4CPP)
+$(LOG4CPP)/src/.libs/liblog4cpp.a:
+	$(MAKE) -C $(LOG4CPP)/src
 
-$(LOG4CPP)/config.log:
-	cd $(LOG4CPP) && ./configure --with-pthreads
+$(LOG4CPP)/include/log4cpp/config.h:
+	cd $(LOG4CPP) && ./configure
 
 clean:
 	rm -f *.d

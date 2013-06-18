@@ -266,9 +266,10 @@ void AlnGraphBoost::markForReaper(VtxDesc n) {
 void AlnGraphBoost::reapNodes() {
     int reapCount = 0;
     std::sort(_reaperBag.begin(), _reaperBag.end());
-    for (VtxDesc d : _reaperBag) {
-        assert(_g[d].backbone==false);
-        remove_vertex(d-reapCount++, _g);
+    std::vector<VtxDesc>::iterator curr = _reaperBag.begin();
+    for (; curr != _reaperBag.end(); ++curr) {
+        assert(_g[*curr].backbone==false);
+        remove_vertex(*curr-reapCount++, _g);
     }
 }
 
@@ -282,7 +283,9 @@ const std::string AlnGraphBoost::consensus(int minWeight) {
     // track the longest consensus path meeting mininum weight
     int offs = 0, bestOffs = 0, length = 0, idx = 0;
     bool metWeight = false;
-    for (const AlnNode& n : path) {
+    std::vector<AlnNode>::iterator curr = path.begin();
+    for (; curr != path.end(); ++curr) {
+        AlnNode n = *curr;
         if (n.base == _g[_enterVtx].base || n.base == _g[_exitVtx].base) 
             continue;
         

@@ -76,7 +76,7 @@ void alnFileConsensus(const std::string alnFile, int minCov=8) {
 
 int main(int argc, char* argv[]) {
     // Setup the root logger to a file
-    log4cpp::Appender *fapp = new log4cpp::FileAppender("default", "gcon.log");
+    log4cpp::Appender *fapp = new log4cpp::FileAppender("default", "gcon.log", false);
     log4cpp::PatternLayout *layout = new log4cpp::PatternLayout();
     layout->setConversionPattern("%d [%p] %m%n");
     fapp->setLayout(layout); 

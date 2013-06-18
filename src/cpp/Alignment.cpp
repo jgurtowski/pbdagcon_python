@@ -9,7 +9,9 @@
 
 std::string revComp(std::string& seq) {
     const std::string bases = "ACTG";
-    for (char& c : seq) {
+    std::string::iterator curr = seq.begin();
+    for (; curr != seq.end(); ++curr) {
+        char& c = *curr;
         c = c == 'T' ? bases[0] : 
             c == 'G' ? bases[1] :
             c == 'A' ? bases[2] : 

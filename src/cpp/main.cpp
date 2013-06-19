@@ -16,6 +16,7 @@
 #include <boost/graph/graphviz.hpp>
 #include "Alignment.hpp"
 #include "AlnGraphBoost.hpp"
+#include "BlasrM5AlnProvider.hpp"
 
 void toFasta(std::string& targetId, AlnGraphBoost& g) {
     g.mergeNodes();
@@ -74,6 +75,26 @@ void alnFileConsensus(const std::string alnFile, int minCov=8) {
         toFasta(targetId, ag);
 }
 
+void alnFileConsensus2(const std::string file, size_t minCov=8) {
+    std::vector<Alignment> alns;
+    BlasrM5AlnProvider ap(file);
+    bool hasNext = true;
+    while (hasNext) {
+        hasNext = ap.nextTarget(alns);
+        if (alns.size() < minCov) continue;
+        AlnGraphBoost ag(alns[0].tlen);
+        for (auto it = alns.begin(); it != alns.end(); ++it) {
+            Alignment aln = normalizeGaps(*it);
+            ag.addAln(aln);
+        }
+    
+        ag.mergeNodes();
+        std::string cns = ag.consensus(minCov);
+        std::cout << ">" << alns[0].tid << std::endl;
+        std::cout << cns << std::endl;
+    }
+}
+
 int main(int argc, char* argv[]) {
     // Setup the root logger to a file
     log4cpp::Appender *fapp = new log4cpp::FileAppender("default", "gcon.log", false);
@@ -85,7 +106,7 @@ int main(int argc, char* argv[]) {
     root.addAppender(fapp);
 
     if (argc == 2)
-        alnFileConsensus(argv[1]);
+        alnFileConsensus2(argv[1]);
         
     return 0;
 }

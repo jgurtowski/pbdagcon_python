@@ -11,6 +11,7 @@
 #include <log4cpp/Layout.hh>
 #include <log4cpp/PatternLayout.hh>
 #include <log4cpp/Priority.hh>
+#include <boost/format.hpp>
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/graphviz.hpp>
@@ -27,23 +28,35 @@
 #include "BoundedBuffer.hpp"
 
 void alnFileConsensus(const std::string file, size_t minCov=8) {
+    log4cpp::Category& logger = log4cpp::Category::getInstance("consensus");
     std::vector<Alignment> alns;
-    BlasrM5AlnProvider ap(file);
-    bool hasNext = true;
-    while (hasNext) {
-        hasNext = ap.nextTarget(alns);
-        if (alns.size() < minCov) continue;
-        AlnGraphBoost ag(alns[0].tlen);
-        for (auto it = alns.begin(); it != alns.end(); ++it) {
-            Alignment aln = normalizeGaps(*it);
-            ag.addAln(aln);
+    try {
+        BlasrM5AlnProvider ap(file);
+
+        bool hasNext = true;
+        while (hasNext) {
+            hasNext = ap.nextTarget(alns);
+            if (alns.size() < minCov) continue;
+            AlnGraphBoost ag(alns[0].tlen);
+            for (auto it = alns.begin(); it != alns.end(); ++it) {
+                Alignment aln = normalizeGaps(*it);
+                ag.addAln(aln);
+            }
+        
+            ag.mergeNodes();
+            std::string cns = ag.consensus(minCov);
+            if (cns == "") continue;
+            std::cout << ">" << alns[0].tid << std::endl;
+            std::cout << cns << std::endl;
         }
-    
-        ag.mergeNodes();
-        std::string cns = ag.consensus(minCov);
-        if (cns == "") continue;
-        std::cout << ">" << alns[0].tid << std::endl;
-        std::cout << cns << std::endl;
+    } 
+    catch (M5Exception::FileOpenError) {
+        logger.error("Error opening file: %s", file.c_str());
+        return;
+    }
+    catch (M5Exception::FormatError err) {
+        logger.error("Format error. Input: %s, Error: %s", 
+            file.c_str(), err.msg.c_str());
     }
 }
 
@@ -66,13 +79,24 @@ public:
     }
 
     void operator()() {
-        BlasrM5AlnProvider ap(fpath_);
-        AlnVec alns;
-        bool hasNext = true;
-        while (hasNext) {
-            hasNext = ap.nextTarget(alns);
-            if (alns.size() < minCov_) continue;
-            alnBuf_->push(alns);
+        log4cpp::Category& logger = 
+            log4cpp::Category::getInstance("Reader");
+        try {
+            BlasrM5AlnProvider ap(fpath_);
+            AlnVec alns;
+            bool hasNext = true;
+            while (hasNext) {
+                hasNext = ap.nextTarget(alns);
+                if (alns.size() < minCov_) continue;
+                alnBuf_->push(alns);
+            }
+        } 
+        catch (M5Exception::FileOpenError) {
+            logger.error("Error opening file: %s", fpath_.c_str());
+        }
+        catch (M5Exception::FormatError err) {
+            logger.error("Format error. Input: %s, Error: %s", 
+                fpath_.c_str(), err.msg.c_str());
         }
         // write out sentinals, one per consensus thread
         AlnVec sentinel;
@@ -141,20 +165,26 @@ public:
     }
 };
 
-int main(int argc, char* argv[]) {
+void setupLogger() {
     // Setup the root logger to a file
     log4cpp::Appender *fapp = new log4cpp::FileAppender("default", "gcon.log", false);
     log4cpp::PatternLayout *layout = new log4cpp::PatternLayout();
-    layout->setConversionPattern("%d [%p] %m%n");
+    layout->setConversionPattern("%d %p [%c] %m%n");
     fapp->setLayout(layout); 
     log4cpp::Category& root = log4cpp::Category::getRoot();
     root.setPriority(log4cpp::Priority::INFO);
     root.addAppender(fapp);
+}
 
-    if (argc == 2)
+int main(int argc, char* argv[]) {
+    setupLogger();
+    log4cpp::Category& logger = log4cpp::Category::getInstance("main");
+    if (argc == 2) {
+        logger.info("Single-threaded. Input: %s", argv[1]);
         alnFileConsensus(argv[1]);
-    else if (argc == 3) {
-        /// WARNING: Entering the thread zone!
+    } else if (argc == 3) {
+        logger.info("Multi-threaded. Input: %s, Threads: %s", 
+            argv[1], argv[2]);
     
         AlnBuf alnBuf(30);
         CnsBuf cnsBuf(30);
@@ -162,6 +192,13 @@ int main(int argc, char* argv[]) {
         int nthreads;
         std::istringstream threadArg(argv[2]);
         threadArg >> nthreads;
+
+        if (nthreads == 0) {
+            boost::format msg("Invalid argument for num threads: %s");
+            msg % argv[2];
+            std::cerr << msg << std::endl;
+            exit(-1);
+        }
         
         Writer writer(&cnsBuf);
         writer.setNumCnsThreads(nthreads);

@@ -2,8 +2,20 @@
 #define __GCON_ALN_PROVIDER__
 
 ///
+/// Exceptions thrown by this class
+///
+namespace M5Exception {
+    struct FormatError {
+        std::string msg;
+        FormatError(std::string m) { msg = m; }
+    };
+
+    struct FileOpenError {};
+}
+
+///
 /// Provides sets of alignments for a given target sequence from a blasr M5 
-/// file.
+/// file.  File must be sorted by target.
 ///
 class BlasrM5AlnProvider {
 public:

@@ -10,6 +10,8 @@ namespace M5Exception {
         FormatError(std::string m) { msg = m; }
     };
 
+    struct SortError {};
+
     struct FileOpenError {};
 }
 

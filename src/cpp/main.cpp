@@ -58,6 +58,9 @@ void alnFileConsensus(const std::string file, size_t minCov=8) {
         logger.error("Format error. Input: %s, Error: %s", 
             file.c_str(), err.msg.c_str());
     }
+    catch (M5Exception::SortError err) {
+        logger.error("Input file is not sorted by target.");
+    }
 }
 
 typedef std::vector<Alignment> AlnVec;
@@ -98,6 +101,10 @@ public:
             logger.error("Format error. Input: %s, Error: %s", 
                 fpath_.c_str(), err.msg.c_str());
         }
+        catch (M5Exception::SortError err) {
+            logger.error("Input file is not sorted by target.");
+        }
+
         // write out sentinals, one per consensus thread
         AlnVec sentinel;
         for (int i=0; i < nCnsThreads_; i++)

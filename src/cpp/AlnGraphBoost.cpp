@@ -306,6 +306,12 @@ const std::string AlnGraphBoost::consensus(int minWeight) {
         idx++;
     }
 
+    // include end of sequence
+    if (metWeight && (idx - offs) > length) {
+        bestOffs = offs;
+        length = idx - offs;
+    }
+    
     return cns.substr(bestOffs, length);
 }
 

@@ -72,12 +72,14 @@ gtest_main.a : gtest-all.o gtest_main.o
 AlnGraphBoost.o : $(USER_DIR)/AlnGraphBoost.cpp $(USER_DIR)/AlnGraphBoost.hpp $(GTEST_HEADERS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/AlnGraphBoost.cpp
 
+AlnGraphBoostTest.o : AlnGraphBoostTest.cpp
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c AlnGraphBoostTest.cpp
+
 Alignment.o : $(USER_DIR)/Alignment.cpp $(USER_DIR)/Alignment.hpp $(GTEST_HEADERS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/Alignment.cpp
 
-sample1_unittest.o : AlnGraphBoostTest.cpp \
-                     $(USER_DIR)/AlnGraphBoost.hpp $(GTEST_HEADERS)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c AlnGraphBoost.cpp
+AlignmentTest.o : AlignmentTest.cpp
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c AlignmentTest.cpp
 
 test_alngraph: AlnGraphBoost.o AlnGraphBoostTest.o gtest_main.a
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@

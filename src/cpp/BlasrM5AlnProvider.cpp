@@ -5,13 +5,11 @@
 #include "Alignment.hpp"
 #include "BlasrM5AlnProvider.hpp"
 
-
 BlasrM5AlnProvider::BlasrM5AlnProvider(std::string fpath) {
-    // XXX: initialize logger 
     fpath_ = fpath;
 
     fstream_.open(fpath);
-    if (! fstream_ || fstream_.fail()) {
+    if (! fstream_.is_open() || fstream_.fail()) {
         throw M5Exception::FileOpenError();
     }
 
@@ -65,5 +63,22 @@ void BlasrM5AlnProvider::checkFormat() {
         throw M5Exception::FormatError(msg.str());
     }
 
-    fstream_.seekg(0, fstream_.beg);
+    // check that the file is sorted by target 
+    Alignment aln;
+    std::vector<std::string> raw, sorted;
+    int max = 50, count = 0;
+    while(fstream_ >> aln && count++ < max) 
+        raw.push_back(aln.tid);
+
+    sorted = raw;
+    std::sort(sorted.begin(), sorted.end());
+    if (raw != sorted)
+        throw M5Exception::SortError();
+
+    // all is well, rewind stream in prep for real work
+    if (fstream_.eof()) {
+        fstream_.close();
+        fstream_.open(fpath_);
+    } else
+        fstream_.seekg(0, fstream_.beg);
 }

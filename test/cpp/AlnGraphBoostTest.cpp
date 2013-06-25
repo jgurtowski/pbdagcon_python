@@ -28,9 +28,9 @@ TEST(AlnGraphBoostTest, RawConsensus) {
 
     for(int i=0; i < 5; i++) {
         Alignment& ra = algs[i];
-        ra.tid = "target";
-        ra.tlen = 9;
-        ra.tstart = 1;
+        ra.id = "target";
+        ra.len = 9;
+        ra.start = 1;
     }
     ag.addAln(algs[0]);
     ag.addAln(algs[1]);

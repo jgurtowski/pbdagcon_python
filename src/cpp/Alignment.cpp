@@ -7,6 +7,9 @@
 #include <cassert>
 #include "Alignment.hpp"
 
+///
+/// Simple method to reverse complement a sequence.
+///
 std::string revComp(std::string& seq) {
     const std::string bases = "ACTG";
     std::string::iterator curr = seq.begin();
@@ -20,6 +23,15 @@ std::string revComp(std::string& seq) {
     return std::string(seq.rbegin(), seq.rend());
 }
 
+bool Alignment::corrTarget = true;
+
+Alignment::Alignment() : 
+    len(0), 
+    start(0), 
+    id(""), 
+    qstr(""), 
+    tstr("") { }
+
 // parses blasr m5 output
 void Alignment::parse(std::istream& instrm) {
     std::string line;
@@ -31,17 +43,29 @@ void Alignment::parse(std::istream& instrm) {
         if (col == "") continue;
         fields.push_back(col);
     }
+
+    // avoids *some* empty lines
     if (fields.size() == 0) return;
-    qid = fields[0];
-    tid = fields[5];
-    std::istringstream iss6(fields[6]);
-    iss6 >> tlen;
-    std::istringstream iss7(fields[7]);
-    iss7 >> tstart;
-    tstart++;
+
+    // base query id (without the last '/<coordinates>')
+    std::string baseQid = fields[0].substr(0,fields[0].find_last_of("/"));
+    id = corrTarget ? fields[5] : baseQid; 
+
+    std::istringstream ssLen(corrTarget ? fields[6] : fields[1]);
+    ssLen >> len;
+    std::istringstream ssStart(corrTarget ? fields[7] : fields[2]);
+    ssStart >> start;
+    start++;
+
+    // the target is always reversed.
     char tStrand = fields[9][0];
-    qstr = tStrand == '-' ? revComp(fields[16]) : fields[16];
-    tstr = tStrand == '-' ? revComp(fields[18]) : fields[18];
+    if (tStrand == '-' && corrTarget) {
+        qstr = revComp(fields[16]);
+        tstr = revComp(fields[18]);
+    } else {
+        qstr = corrTarget ? fields[16] : fields[18];
+        tstr = corrTarget ? fields[18] : fields[16];
+    }
 }
 
 std::istream& operator>>(std::istream& instrm, Alignment& data) {
@@ -50,7 +74,7 @@ std::istream& operator>>(std::istream& instrm, Alignment& data) {
 }
 
 Alignment normalizeGaps(Alignment& aln) {
-    size_t qlen = aln.qstr.length(), tlen = aln.qstr.length();
+    size_t qlen = aln.qstr.length(), tlen = aln.tstr.length();
     assert(qlen == tlen);
     std::string qNorm, tNorm;
 
@@ -107,7 +131,9 @@ Alignment normalizeGaps(Alignment& aln) {
 
     // generate the final, normalized alignment strings
     Alignment finalNorm;
-    finalNorm.tstart = aln.tstart;
+    finalNorm.id = aln.id;
+    finalNorm.start = aln.start;
+    finalNorm.len = aln.len;
     for (size_t i=0; i < qlen; i++) {
         if (qNorm[i] != '-' || tNorm[i] != '-') {
             finalNorm.qstr += qNorm[i];

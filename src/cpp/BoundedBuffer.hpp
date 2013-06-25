@@ -1,6 +1,10 @@
 
 ///
-/// Thread-safe buffer container, lifted from boost.
+/// Templated, thread-safe buffer container, uses uses boost::circular buffer 
+/// bounded by a given capacity specified by the caller.  When the buffer is 
+/// full, the push waits for an open spot.  When the buffer is empty, the pop
+/// waits for an item to be present.  Condition variables are used to signal
+/// the state of the buffer.
 ///
 template <class T>
 class BoundedBuffer {

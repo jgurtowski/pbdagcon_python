@@ -1,6 +1,7 @@
 #include <vector>
 #include <fstream>
 #include <sstream>
+#include <log4cpp/Category.hh>
 #include <boost/format.hpp>
 #include "Alignment.hpp"
 #include "BlasrM5AlnProvider.hpp"
@@ -14,7 +15,7 @@ BlasrM5AlnProvider::BlasrM5AlnProvider(std::string fpath) {
     }
 
     checkFormat();
-    currTargetId_ = "";
+    currId_ = "";
     firstAln_ = true;
 }
 
@@ -29,15 +30,13 @@ bool BlasrM5AlnProvider::nextTarget(std::vector<Alignment>& dest) {
 
     Alignment aln;
     while (fstream_ >> aln) {
-        if (aln.tid != currTargetId_) {
+        if (aln.id != currId_) {
             firstAln_ = false;
             prevAln_ = aln;
-            currTargetId_ = aln.tid;
+            currId_ = aln.id;
             break;
         }
 
-        // skip self hits
-        if (aln.qid == currTargetId_) continue;
         dest.push_back(aln);
     }
 
@@ -45,6 +44,8 @@ bool BlasrM5AlnProvider::nextTarget(std::vector<Alignment>& dest) {
 }
 
 void BlasrM5AlnProvider::checkFormat() {
+    log4cpp::Category& logger = 
+        log4cpp::Category::getInstance("BlasrM5AlnProvider");
     // parse the first line and run some field checks
     std::string line;
     std::getline(fstream_, line);
@@ -63,17 +64,23 @@ void BlasrM5AlnProvider::checkFormat() {
         throw M5Exception::FormatError(msg.str());
     }
 
-    // check that the file is sorted by target 
+    // check how the alignments are grouped
     Alignment aln;
     std::vector<std::string> raw, sorted;
     int max = 50, count = 0;
     while(fstream_ >> aln && count++ < max) 
-        raw.push_back(aln.tid);
+        raw.push_back(aln.id);
 
     sorted = raw;
     std::sort(sorted.begin(), sorted.end());
-    if (raw != sorted)
-        throw M5Exception::SortError();
+
+    std::string logl = "Alignments appear to be grouped by %s";
+    if (raw != sorted) {
+        logger.info(logl.c_str(), "query");
+        Alignment::corrTarget = false;
+    } else {
+        logger.info(logl.c_str(), "target");
+    }
 
     // all is well, rewind stream in prep for real work
     if (fstream_.eof()) {

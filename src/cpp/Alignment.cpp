@@ -23,6 +23,9 @@ std::string revComp(std::string& seq) {
     return std::string(seq.rbegin(), seq.rend());
 }
 
+// Set this to false if the alignments are grouped by query.  The parse
+// routine will be adjusted to build the alignment graph based on the 
+// queries. 
 bool Alignment::corrTarget = true;
 
 Alignment::Alignment() : 
@@ -32,7 +35,7 @@ Alignment::Alignment() :
     qstr(""), 
     tstr("") { }
 
-// parses blasr m5 output
+// Parses blasr m5 output grouped either by target or query.
 void Alignment::parse(std::istream& instrm) {
     std::string line;
     std::getline(instrm, line);
@@ -47,7 +50,8 @@ void Alignment::parse(std::istream& instrm) {
     // avoids *some* empty lines
     if (fields.size() == 0) return;
 
-    // base query id (without the last '/<coordinates>')
+    // base query id (without the last '/<coordinates>'), allows us to 
+    // group properly by query when asked.
     std::string baseQid = fields[0].substr(0,fields[0].find_last_of("/"));
     id = corrTarget ? fields[5] : baseQid; 
 
@@ -60,6 +64,7 @@ void Alignment::parse(std::istream& instrm) {
     // the target is always reversed.
     char tStrand = fields[9][0];
     if (tStrand == '-' && corrTarget) {
+        // only need to reverse complement when correcting targets
         qstr = revComp(fields[16]);
         tstr = revComp(fields[18]);
     } else {

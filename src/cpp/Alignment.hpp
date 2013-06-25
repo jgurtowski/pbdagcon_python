@@ -1,25 +1,33 @@
 #ifndef __GCON_ALIGNMENT_HPP__
 #define __GCON_ALIGNMENT_HPP__
 
-// Super-simple alignment representation.
-// XXX: Accomodate CIGAR strings? Still need target sequence for gap pushing.
-struct Alignment {
-    uint32_t tlen;
+/// 
+/// Super-simple alignment representation.  Represents an alignment between two
+/// PacBio reads, one of which we're trying to correct.  The read to correct
+/// may be either the target or the query, depending on how the alignment was
+/// done.
+///
+class Alignment {
+public:
+    // May correct the target or the query, default is target
+    static bool corrTarget;
+
+    // length of the sequence we are trying to correct
+    uint32_t len;
     
     // comforming offsets are 1-based
-    uint32_t tstart;
+    uint32_t start;
 
-    // query id
-    std::string qid;
-
-    // target id
-    std::string tid;
+    // ID of the read we're trying to correct, same as ZMW ID
+    std::string id;
 
     // query and target strings must be equal length
     std::string qstr;
     std::string tstr;
 
-    // XXX: currently blasr m5 output parser.  make more flexible?
+    Alignment();
+
+    // input m5 stream
     void parse(std::istream& instrm);
 };
 

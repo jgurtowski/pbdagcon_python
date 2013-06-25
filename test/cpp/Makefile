@@ -81,7 +81,7 @@ Alignment.o : $(USER_DIR)/Alignment.cpp $(USER_DIR)/Alignment.hpp $(GTEST_HEADER
 AlignmentTest.o : AlignmentTest.cpp
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c AlignmentTest.cpp
 
-test_alngraph: AlnGraphBoost.o AlnGraphBoostTest.o gtest_main.a
+test_alngraph: AlnGraphBoost.o AlnGraphBoostTest.o Alignment.o gtest_main.a
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@
 
 test_alignment: Alignment.o AlignmentTest.o gtest_main.a

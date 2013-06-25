@@ -17,7 +17,10 @@ namespace M5Exception {
 
 ///
 /// Provides sets of alignments for a given target sequence from a blasr M5 
-/// file.  File must be sorted by target.
+/// file.  File may be grouped by target or query.  The grouping determines
+/// which set gets corrected.  Earlier, pre-assembly reads were corrected as
+/// targets.  However, we can avoid the sort step if we can correct the reads 
+/// as queries, since blasr groups alignments by query.
 ///
 class BlasrM5AlnProvider {
 public:
@@ -34,6 +37,7 @@ public:
     bool nextTarget(std::vector<Alignment>& dest);
     
     /// Called during constructor, checks that the file is formatted correctly.
+    /// Also determines if the input is grouped by query or target.
     void checkFormat();
 
 private:
@@ -44,7 +48,7 @@ private:
     std::string fpath_;
 
     /// State variables 
-    std::string currTargetId_;
+    std::string currId_;
     Alignment prevAln_;
     bool firstAln_;
 };

@@ -60,7 +60,7 @@ AlnGraphBoost::AlnGraphBoost(const size_t blen) {
 void AlnGraphBoost::addAln(Alignment& aln) {
     IndexMap index = boost::get(boost::vertex_index, _g);
     // tracks the position on the backbone
-    uint32_t bbPos = aln.tstart;
+    uint32_t bbPos = aln.start;
     VtxDesc prevVtx = _enterVtx;
     for (size_t i = 0; i < aln.qstr.length(); i++) {
         char queryBase = aln.qstr[i], targetBase = aln.tstr[i];

@@ -37,7 +37,7 @@ void alnFileConsensus(const std::string file, size_t minCov=8) {
         while (hasNext) {
             hasNext = ap.nextTarget(alns);
             if (alns.size() < minCov) continue;
-            AlnGraphBoost ag(alns[0].tlen);
+            AlnGraphBoost ag(alns[0].len);
             for (auto it = alns.begin(); it != alns.end(); ++it) {
                 Alignment aln = normalizeGaps(*it);
                 ag.addAln(aln);
@@ -46,7 +46,7 @@ void alnFileConsensus(const std::string file, size_t minCov=8) {
             ag.mergeNodes();
             std::string cns = ag.consensus(minCov);
             if (cns == "") continue;
-            std::cout << ">" << alns[0].tid << std::endl;
+            std::cout << ">" << alns[0].id << std::endl;
             std::cout << cns << std::endl;
         }
     } 
@@ -59,7 +59,7 @@ void alnFileConsensus(const std::string file, size_t minCov=8) {
             file.c_str(), err.msg.c_str());
     }
     catch (M5Exception::SortError err) {
-        logger.error("Input file is not sorted by target.");
+        logger.error("Input file is not sorted by either target or query.");
     }
 }
 
@@ -102,7 +102,7 @@ public:
                 fpath_.c_str(), err.msg.c_str());
         }
         catch (M5Exception::SortError err) {
-            logger.error("Input file is not sorted by target.");
+            logger.error("Input file is not sorted by either target or query.");
         }
 
         // write out sentinals, one per consensus thread
@@ -126,7 +126,7 @@ public:
         alnBuf_->pop(&alns);
 
         while (alns.size() > 0) {
-            AlnGraphBoost ag(alns[0].tlen);
+            AlnGraphBoost ag(alns[0].len);
             for (auto it = alns.begin(); it != alns.end(); ++it) {
                 Alignment aln = normalizeGaps(*it);
                 ag.addAln(aln);
@@ -135,7 +135,7 @@ public:
             std::ostringstream fasta;
             std::string cns = ag.consensus(minWeight_);
             if (cns != "") {
-                fasta << ">" << alns[0].tid << std::endl;
+                fasta << ">" << alns[0].id << std::endl;
                 fasta << cns << std::endl;
                 cnsBuf_->push(fasta.str()); 
             }

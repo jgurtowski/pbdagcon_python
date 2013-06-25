@@ -7,7 +7,7 @@
 
 TEST(Alignment, Normalize) {
     Alignment a, b;
-    a.tstart = 1;
+    a.start = 1;
 
     // test mismatch
     b.qstr = "CAC";
@@ -39,12 +39,12 @@ TEST(Alignment, Parsing) {
     std::ifstream file("aln.m5");
     Alignment aln;
     file >> aln;
-    EXPECT_EQ(1, aln.tstart);
+    EXPECT_EQ(1, aln.start);
     EXPECT_EQ("CAC", aln.qstr);
     EXPECT_EQ("CGC", aln.tstr);
 
     file >> aln;
-    EXPECT_EQ(1, aln.tstart);
+    EXPECT_EQ(1, aln.start);
     EXPECT_EQ("AATTGGCC", aln.qstr);
     EXPECT_EQ("GGCCAATT", aln.tstr);
 }

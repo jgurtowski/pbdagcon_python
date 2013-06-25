@@ -27,15 +27,23 @@
 #include "BlasrM5AlnProvider.hpp"
 #include "BoundedBuffer.hpp"
 
+///
+/// Single-threaded consensus execution.
+///
 void alnFileConsensus(const std::string file, size_t minCov=8) {
     log4cpp::Category& logger = log4cpp::Category::getInstance("consensus");
     std::vector<Alignment> alns;
     try {
-        BlasrM5AlnProvider ap(file);
+        BlasrM5AlnProvider* ap;
+        if (file == "-") { 
+            ap = new BlasrM5AlnProvider(&std::cin);
+        } else {
+            ap = new BlasrM5AlnProvider(file);
+        }
 
         bool hasNext = true;
         while (hasNext) {
-            hasNext = ap.nextTarget(alns);
+            hasNext = ap->nextTarget(alns);
             if (alns.size() < minCov) continue;
             AlnGraphBoost ag(alns[0].len);
             for (auto it = alns.begin(); it != alns.end(); ++it) {
@@ -69,11 +77,11 @@ typedef BoundedBuffer<std::string> CnsBuf;
 
 class Reader {
     AlnBuf* alnBuf_;
-    std::string fpath_;
+    const std::string fpath_;
     size_t minCov_;
     int nCnsThreads_;
 public:
-    Reader(AlnBuf* b, std::string fpath) : alnBuf_(b), fpath_(fpath) {
+    Reader(AlnBuf* b, const std::string fpath) : alnBuf_(b), fpath_(fpath) {
         minCov_ = 8;
     }
 
@@ -85,11 +93,16 @@ public:
         log4cpp::Category& logger = 
             log4cpp::Category::getInstance("Reader");
         try {
-            BlasrM5AlnProvider ap(fpath_);
+            BlasrM5AlnProvider* ap;
+            if (fpath_ == "-") { 
+                ap = new BlasrM5AlnProvider(&std::cin);
+            } else {
+                ap = new BlasrM5AlnProvider(fpath_);
+            }
             AlnVec alns;
             bool hasNext = true;
             while (hasNext) {
-                hasNext = ap.nextTarget(alns);
+                hasNext = ap->nextTarget(alns);
                 if (alns.size() < minCov_) continue;
                 alnBuf_->push(alns);
             }
@@ -186,6 +199,8 @@ void setupLogger() {
 int main(int argc, char* argv[]) {
     setupLogger();
     log4cpp::Category& logger = log4cpp::Category::getInstance("main");
+
+    // XXX: Add command line options
     if (argc == 2) {
         logger.info("Single-threaded. Input: %s", argv[1]);
         alnFileConsensus(argv[1]);

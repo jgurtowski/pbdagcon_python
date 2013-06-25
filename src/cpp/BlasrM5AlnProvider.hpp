@@ -27,7 +27,15 @@ public:
     /// Constructs a new alignment provider.  Checks the format of the file and
     /// throws an exception if it's malformed.
     /// \param fpath Path to the file containing alignments.
-    BlasrM5AlnProvider(const std::string fpath);
+    BlasrM5AlnProvider(const std::string& fpath);
+
+    /// Constructs a provider based on the given stream.  Note that no checks
+    /// are actually made on the validity of the format, caveat emptor. This
+    /// can be used to take a piped stream of alignments straight from blasr.
+    BlasrM5AlnProvider(std::istream* stream);
+    
+    /// Cleans up some stuff.
+    virtual ~BlasrM5AlnProvider();
 
     /// Gets the set of alignments for the next target and puts them into the
     /// given vector.  Note this function will clear the contents of the vector
@@ -41,16 +49,17 @@ public:
     void checkFormat();
 
 private:
-    /// Represents an input stream to the alignment file.
-    std::ifstream fstream_;
-
     /// Path to the input file
-    std::string fpath_;
+    const std::string fpath_;
 
     /// State variables 
     std::string currId_;
     Alignment prevAln_;
     bool firstAln_;
+    
+    /// Represents an input stream to the alignments.
+    std::ifstream fs_;
+    std::istream* is_;
 };
 
 #endif //__GCON_ALN_PROVIDER__

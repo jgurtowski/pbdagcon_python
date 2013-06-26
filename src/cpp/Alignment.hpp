@@ -10,7 +10,7 @@
 class Alignment {
 public:
     // May correct the target or the query, default is target
-    static bool corrTarget;
+    static bool groupByTarget;
 
     // length of the sequence we are trying to correct
     uint32_t len;

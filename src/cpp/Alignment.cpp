@@ -26,7 +26,7 @@ std::string revComp(std::string& seq) {
 // Set this to false if the alignments are grouped by query.  The parse
 // routine will be adjusted to build the alignment graph based on the 
 // queries. 
-bool Alignment::corrTarget = true;
+bool Alignment::groupByTarget = true;
 
 Alignment::Alignment() : 
     len(0), 
@@ -53,23 +53,23 @@ void Alignment::parse(std::istream& instrm) {
     // base query id (without the last '/<coordinates>'), allows us to 
     // group properly by query when asked.
     std::string baseQid = fields[0].substr(0,fields[0].find_last_of("/"));
-    id = corrTarget ? fields[5] : baseQid; 
+    id = groupByTarget ? fields[5] : baseQid; 
 
-    std::istringstream ssLen(corrTarget ? fields[6] : fields[1]);
+    std::istringstream ssLen(groupByTarget ? fields[6] : fields[1]);
     ssLen >> len;
-    std::istringstream ssStart(corrTarget ? fields[7] : fields[2]);
+    std::istringstream ssStart(groupByTarget ? fields[7] : fields[2]);
     ssStart >> start;
     start++;
 
     // the target is always reversed.
     char tStrand = fields[9][0];
-    if (tStrand == '-' && corrTarget) {
+    if (tStrand == '-' && groupByTarget) {
         // only need to reverse complement when correcting targets
         qstr = revComp(fields[16]);
         tstr = revComp(fields[18]);
     } else {
-        qstr = corrTarget ? fields[16] : fields[18];
-        tstr = corrTarget ? fields[18] : fields[16];
+        qstr = groupByTarget ? fields[16] : fields[18];
+        tstr = groupByTarget ? fields[18] : fields[16];
     }
 }
 

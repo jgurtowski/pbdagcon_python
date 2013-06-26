@@ -27,7 +27,7 @@ BlasrM5AlnProvider::BlasrM5AlnProvider(std::istream* stream) :
     fs_(),
     is_(stream) {
 
-    Alignment::corrTarget = false;
+    Alignment::groupByTarget = false;
 }
 
 BlasrM5AlnProvider::~BlasrM5AlnProvider() {
@@ -95,7 +95,7 @@ void BlasrM5AlnProvider::checkFormat() {
     std::string logl = "Alignments appear to be grouped by %s";
     if (raw != sorted) {
         logger.info(logl.c_str(), "query");
-        Alignment::corrTarget = false;
+        Alignment::groupByTarget = false;
     } else {
         logger.info(logl.c_str(), "target");
     }

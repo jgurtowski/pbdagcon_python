@@ -35,8 +35,8 @@ TEST(Alignment, Normalize) {
     EXPECT_EQ("ATATTAG--G-C", b.tstr);
 }
 
-TEST(Alignment, Parsing) {
-    std::ifstream file("aln.m5");
+TEST(Alignment, ParseBasic) {
+    std::ifstream file("basic.m5");
     Alignment aln;
     file >> aln;
     EXPECT_EQ(1, aln.start);
@@ -47,4 +47,17 @@ TEST(Alignment, Parsing) {
     EXPECT_EQ(1, aln.start);
     EXPECT_EQ("AATTGGCC", aln.qstr);
     EXPECT_EQ("GGCCAATT", aln.tstr);
+}
+
+TEST(Alignment, ParseQuery) {
+    std::ifstream file("parsequery.m5");
+    Alignment aln;
+    Alignment::groupByTarget = false;
+    file >> aln;
+    EXPECT_EQ("m130110_062238_00114_c100480560100000001823075906281381_s1_p0/311/1102_3151",
+              aln.id);
+    EXPECT_EQ(2049, aln.len);
+    EXPECT_EQ(8, aln.start);
+    EXPECT_EQ("CTGCATGCT", aln.tstr.substr(0,9));
+    EXPECT_EQ("CTGCA--CT", aln.qstr.substr(0,9));
 }

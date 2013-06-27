@@ -26,8 +26,6 @@ BlasrM5AlnProvider::BlasrM5AlnProvider(std::istream* stream) :
     firstAln_(true),
     fs_(),
     is_(stream) {
-
-    Alignment::groupByTarget = false;
 }
 
 BlasrM5AlnProvider::~BlasrM5AlnProvider() {

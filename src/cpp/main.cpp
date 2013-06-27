@@ -22,10 +22,13 @@
 #include <boost/call_traits.hpp>
 #include <boost/progress.hpp>
 #include <boost/bind.hpp>
+#include <boost/program_options.hpp>
 #include "Alignment.hpp"
 #include "AlnGraphBoost.hpp"
 #include "BlasrM5AlnProvider.hpp"
 #include "BoundedBuffer.hpp"
+
+namespace opts = boost::program_options;
 
 ///
 /// Single-threaded consensus execution.
@@ -196,52 +199,81 @@ void setupLogger() {
     root.addAppender(fapp);
 }
 
+bool parseOpts(int ac, char* av[], opts::variables_map& vm) {
+    opts::options_description 
+        odesc("PacBio read-on-read error correction via consensus");
+    odesc.add_options()
+        ("help,h", "Display this help")
+        ("correct-query,q", "Correct the queries instead of targets. "
+            "If not set, and the input is a file, the code will correct the side "
+            "that is grouped.")
+        ("threads,j", opts::value<int>(), "Number of consensus threads to use")
+        ("rbuf,r", opts::value<int>()->default_value(30), "Size of the read buffer")
+        ("wbuf,w", opts::value<int>()->default_value(30), "Size of the write buffer")
+        ("input", opts::value<std::string>()->default_value("-"), "Input")
+    ;
+
+    opts::positional_options_description pdesc; 
+    pdesc.add("input", 1);
+    opts::store(opts::command_line_parser(ac, av)
+                .options(odesc).positional(pdesc).run(), vm);
+
+    opts::notify(vm);
+
+    if (vm.count("help") || ! vm.count("input")) {
+        std::cout << "Usage: " << av[0] << " [options] <input>"<< "\n\n";
+        std::cout << odesc << "\n";
+        return false;
+    }
+
+
+    return true;
+}
+
 int main(int argc, char* argv[]) {
     setupLogger();
     log4cpp::Category& logger = log4cpp::Category::getInstance("main");
 
     // XXX: Add command line options
-    if (argc == 2) {
-        logger.info("Single-threaded. Input: %s", argv[1]);
-        alnFileConsensus(argv[1]);
-    } else if (argc == 3) {
-        logger.info("Multi-threaded. Input: %s, Threads: %s", 
-            argv[1], argv[2]);
+    opts::variables_map vm;
+    if (! parseOpts(argc, argv, vm)) exit(1);
+
+    if (vm.count("correct-query")) {
+        Alignment::groupByTarget = false;
+    }
+
+    std::string input = vm["input"].as<std::string>(); 
+    if (vm.count("threads")) {
+        int nthreads = vm["threads"].as<int>();
+        logger.info("Multi-threaded. Input: %s, Threads: %d", 
+            input.c_str(), nthreads);
     
-        AlnBuf alnBuf(30);
-        CnsBuf cnsBuf(30);
+        AlnBuf alnBuf(vm["rbuf"].as<int>());
+        CnsBuf cnsBuf(vm["wbuf"].as<int>());
 
-        int nthreads;
-        std::istringstream threadArg(argv[2]);
-        threadArg >> nthreads;
-
-        if (nthreads == 0) {
-            boost::format msg("Invalid argument for num threads: %s");
-            msg % argv[2];
-            std::cerr << msg << std::endl;
-            exit(-1);
-        }
-        
         Writer writer(&cnsBuf);
         writer.setNumCnsThreads(nthreads);
         boost::thread threadedWriter(writer);
 
-        std::vector<boost::thread> threadedConsensus;
+        std::vector<boost::thread> cnsThreads;
         for (int i=0; i < nthreads; i++) {
             Consensus c(&alnBuf, &cnsBuf);
-            threadedConsensus.push_back(boost::thread(c));
+            cnsThreads.push_back(boost::thread(c));
         }
 
-        Reader reader(&alnBuf, argv[1]);
+        Reader reader(&alnBuf, input);
         reader.setNumCnsThreads(nthreads);
         boost::thread threadedReader(reader);
 
         threadedWriter.join();
         std::vector<boost::thread>::iterator it;
-        for (it = threadedConsensus.begin(); it != threadedConsensus.end(); ++it)
+        for (it = cnsThreads.begin(); it != cnsThreads.end(); ++it)
             it->join();
     
         threadedReader.join();
+    } else {
+        logger.info("Single-threaded. Input: %s", argv[1]);
+        alnFileConsensus(input);
     }
         
     return 0;

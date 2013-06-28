@@ -33,7 +33,7 @@ namespace opts = boost::program_options;
 ///
 /// Single-threaded consensus execution.
 ///
-void alnFileConsensus(const std::string file, size_t minCov=8) {
+void alnFileConsensus(const std::string file, size_t minCov=8, size_t minLen=500) {
     log4cpp::Category& logger = log4cpp::Category::getInstance("consensus");
     std::vector<Alignment> alns;
     try {
@@ -56,7 +56,7 @@ void alnFileConsensus(const std::string file, size_t minCov=8) {
         
             ag.mergeNodes();
             std::string cns = ag.consensus(minCov);
-            if (cns == "") continue;
+            if (cns.length() < minLen) continue;
             std::cout << ">" << alns[0].id << std::endl;
             std::cout << cns << std::endl;
         }
@@ -84,8 +84,10 @@ class Reader {
     size_t minCov_;
     int nCnsThreads_;
 public:
-    Reader(AlnBuf* b, const std::string fpath) : alnBuf_(b), fpath_(fpath) {
-        minCov_ = 8;
+    Reader(AlnBuf* b, const std::string fpath, size_t minCov) : 
+        alnBuf_(b), 
+        fpath_(fpath),
+        minCov_(minCov) {
     }
 
     void setNumCnsThreads(int n) {
@@ -165,9 +167,10 @@ public:
 
 class Writer {
     CnsBuf* cnsBuf_;
+    size_t minLen_;
     int nCnsThreads_;
 public:
-    Writer(CnsBuf* cb) : cnsBuf_(cb) {}
+    Writer(CnsBuf* cb, size_t minLen) : cnsBuf_(cb), minLen_(minLen) {}
     
     void setNumCnsThreads(int n) {
         nCnsThreads_ = n;
@@ -178,7 +181,7 @@ public:
         cnsBuf_->pop(&cns);
         int sentinelCount = 0;
         while (true) {
-            if (cns != "") 
+            if (cns.length() < minLen_) 
                 std::cout << cns;
             if (cns == "" && ++sentinelCount == nCnsThreads_) 
                 break;
@@ -204,6 +207,10 @@ bool parseOpts(int ac, char* av[], opts::variables_map& vm) {
         odesc("PacBio read-on-read error correction via consensus");
     odesc.add_options()
         ("help,h", "Display this help")
+        ("min-length,m", opts::value<int>()->default_value(500), 
+            "Filter corrected reads less than length")
+        ("min-coverage,c", opts::value<int>()->default_value(8),
+            "Minimum coverage required to correct")
         ("correct-query,q", "Correct the queries instead of targets. "
             "If not set, and the input is a file, the code will correct the side "
             "that is grouped.")
@@ -234,13 +241,15 @@ int main(int argc, char* argv[]) {
     setupLogger();
     log4cpp::Category& logger = log4cpp::Category::getInstance("main");
 
-    // XXX: Add command line options
     opts::variables_map vm;
     if (! parseOpts(argc, argv, vm)) exit(1);
 
     if (vm.count("correct-query")) {
         Alignment::groupByTarget = false;
     }
+
+    size_t minCov = vm["min-coverage"].as<int>();
+    size_t minLen = vm["min-length"].as<int>();
 
     std::string input = vm["input"].as<std::string>(); 
     if (vm.count("threads")) {
@@ -251,9 +260,9 @@ int main(int argc, char* argv[]) {
         AlnBuf alnBuf(vm["rbuf"].as<int>());
         CnsBuf cnsBuf(vm["wbuf"].as<int>());
 
-        Writer writer(&cnsBuf);
+        Writer writer(&cnsBuf, minLen);
         writer.setNumCnsThreads(nthreads);
-        boost::thread threadedWriter(writer);
+        boost::thread writerThread(writer);
 
         std::vector<boost::thread> cnsThreads;
         for (int i=0; i < nthreads; i++) {
@@ -261,19 +270,19 @@ int main(int argc, char* argv[]) {
             cnsThreads.push_back(boost::thread(c));
         }
 
-        Reader reader(&alnBuf, input);
+        Reader reader(&alnBuf, input, minCov);
         reader.setNumCnsThreads(nthreads);
-        boost::thread threadedReader(reader);
+        boost::thread readerThread(reader);
 
-        threadedWriter.join();
+        writerThread.join();
         std::vector<boost::thread>::iterator it;
         for (it = cnsThreads.begin(); it != cnsThreads.end(); ++it)
             it->join();
     
-        threadedReader.join();
+        readerThread.join();
     } else {
         logger.info("Single-threaded. Input: %s", argv[1]);
-        alnFileConsensus(input);
+        alnFileConsensus(input, minCov, minLen);
     }
         
     return 0;

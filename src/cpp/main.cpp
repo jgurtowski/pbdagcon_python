@@ -30,10 +30,17 @@
 
 namespace opts = boost::program_options;
 
+struct FilterOpts {
+    /// Minimum alignment coverage for consensus
+    size_t minCov;
+    /// Minimum consensus length to output
+    size_t minLen;
+} fopts;
+
 ///
 /// Single-threaded consensus execution.
 ///
-void alnFileConsensus(const std::string file, size_t minCov=8, size_t minLen=500) {
+void alnFileConsensus(const std::string file, const FilterOpts& fopts) {
     log4cpp::Category& logger = log4cpp::Category::getInstance("consensus");
     std::vector<Alignment> alns;
     try {
@@ -47,7 +54,7 @@ void alnFileConsensus(const std::string file, size_t minCov=8, size_t minLen=500
         bool hasNext = true;
         while (hasNext) {
             hasNext = ap->nextTarget(alns);
-            if (alns.size() < minCov) continue;
+            if (alns.size() < fopts.minCov) continue;
             AlnGraphBoost ag(alns[0].len);
             for (auto it = alns.begin(); it != alns.end(); ++it) {
                 Alignment aln = normalizeGaps(*it);
@@ -55,8 +62,8 @@ void alnFileConsensus(const std::string file, size_t minCov=8, size_t minLen=500
             }
         
             ag.mergeNodes();
-            std::string cns = ag.consensus(minCov);
-            if (cns.length() < minLen) continue;
+            std::string cns = ag.consensus(fopts.minCov);
+            if (cns.length() < fopts.minLen) continue;
             std::cout << ">" << alns[0].id << std::endl;
             std::cout << cns << std::endl;
         }
@@ -87,8 +94,8 @@ public:
     Reader(AlnBuf* b, const std::string fpath, size_t minCov) : 
         alnBuf_(b), 
         fpath_(fpath),
-        minCov_(minCov) {
-    }
+        minCov_(minCov)
+    { }
 
     void setNumCnsThreads(int n) {
         nCnsThreads_ = n;
@@ -108,7 +115,12 @@ public:
             bool hasNext = true;
             while (hasNext) {
                 hasNext = ap->nextTarget(alns);
-                if (alns.size() < minCov_) continue;
+                size_t cov = alns.size();
+                if (cov > 0 && cov < minCov_) {
+                    logger.debug("Coverage requirement not met for %s, coverage: %d", 
+                        alns[0].id.c_str(), alns.size());
+                    continue;
+                }
                 alnBuf_->push(alns);
             }
         } 
@@ -133,13 +145,19 @@ public:
 class Consensus {
     AlnBuf* alnBuf_;
     CnsBuf* cnsBuf_;
+    size_t minLen_;
     int minWeight_;
 public:
-    Consensus(AlnBuf* ab, CnsBuf* cb) : alnBuf_(ab), cnsBuf_(cb) {
-        minWeight_ = 8;
-    }
+    Consensus(AlnBuf* ab, CnsBuf* cb, size_t minLen) : 
+        alnBuf_(ab), 
+        cnsBuf_(cb),
+        minLen_(minLen),
+        minWeight_(8)
+    { }
 
     void operator()() {
+        log4cpp::Category& logger = 
+            log4cpp::Category::getInstance("Writer");
         AlnVec alns;
         alnBuf_->pop(&alns);
 
@@ -152,10 +170,13 @@ public:
             ag.mergeNodes();
             std::ostringstream fasta;
             std::string cns = ag.consensus(minWeight_);
-            if (cns != "") {
+            if (cns.length() > minLen_) {
                 fasta << ">" << alns[0].id << std::endl;
                 fasta << cns << std::endl;
                 cnsBuf_->push(fasta.str()); 
+            } else {
+                logger.debug("Consensus length too short: %s, length: %d",
+                    alns[0].id.c_str(), cns.length());
             }
 
             alnBuf_->pop(&alns);
@@ -167,10 +188,9 @@ public:
 
 class Writer {
     CnsBuf* cnsBuf_;
-    size_t minLen_;
     int nCnsThreads_;
 public:
-    Writer(CnsBuf* cb, size_t minLen) : cnsBuf_(cb), minLen_(minLen) {}
+    Writer(CnsBuf* cb) : cnsBuf_(cb) {}
     
     void setNumCnsThreads(int n) {
         nCnsThreads_ = n;
@@ -181,8 +201,7 @@ public:
         cnsBuf_->pop(&cns);
         int sentinelCount = 0;
         while (true) {
-            if (cns.length() < minLen_) 
-                std::cout << cns;
+            std::cout << cns;
             if (cns == "" && ++sentinelCount == nCnsThreads_) 
                 break;
 
@@ -191,14 +210,14 @@ public:
     }
 };
 
-void setupLogger() {
+void setupLogger(log4cpp::Priority::Value priority) {
     // Setup the root logger to a file
     log4cpp::Appender *fapp = new log4cpp::FileAppender("default", "gcon.log", false);
     log4cpp::PatternLayout *layout = new log4cpp::PatternLayout();
     layout->setConversionPattern("%d %p [%c] %m%n");
     fapp->setLayout(layout); 
     log4cpp::Category& root = log4cpp::Category::getRoot();
-    root.setPriority(log4cpp::Priority::INFO);
+    root.setPriority(priority);
     root.addAppender(fapp);
 }
 
@@ -207,6 +226,7 @@ bool parseOpts(int ac, char* av[], opts::variables_map& vm) {
         odesc("PacBio read-on-read error correction via consensus");
     odesc.add_options()
         ("help,h", "Display this help")
+        ("verbose,v", "Increase logging verbosity")
         ("min-length,m", opts::value<int>()->default_value(500), 
             "Filter corrected reads less than length")
         ("min-coverage,c", opts::value<int>()->default_value(8),
@@ -217,7 +237,7 @@ bool parseOpts(int ac, char* av[], opts::variables_map& vm) {
         ("threads,j", opts::value<int>(), "Number of consensus threads to use")
         ("rbuf,r", opts::value<int>()->default_value(30), "Size of the read buffer")
         ("wbuf,w", opts::value<int>()->default_value(30), "Size of the write buffer")
-        ("input", opts::value<std::string>()->default_value("-"), "Input")
+        ("input", opts::value<std::string>()->default_value("-"), "Input (flag is optional)")
     ;
 
     opts::positional_options_description pdesc; 
@@ -238,18 +258,23 @@ bool parseOpts(int ac, char* av[], opts::variables_map& vm) {
 }
 
 int main(int argc, char* argv[]) {
-    setupLogger();
-    log4cpp::Category& logger = log4cpp::Category::getInstance("main");
-
     opts::variables_map vm;
     if (! parseOpts(argc, argv, vm)) exit(1);
 
+    // http://log4cpp.sourceforge.net/api/classlog4cpp_1_1Priority.html
+    // defaults to INFO.
+    setupLogger(vm.count("verbose") ? 700 : 600);
+    log4cpp::Category& logger = log4cpp::Category::getInstance("main");
+
     if (vm.count("correct-query")) {
         Alignment::groupByTarget = false;
+        logger.info("Configured to correct queries");
+    } else {
+        logger.info("Configured to correct targets");
     }
 
-    size_t minCov = vm["min-coverage"].as<int>();
-    size_t minLen = vm["min-length"].as<int>();
+    fopts.minCov = vm["min-coverage"].as<int>();
+    fopts.minLen = vm["min-length"].as<int>();
 
     std::string input = vm["input"].as<std::string>(); 
     if (vm.count("threads")) {
@@ -260,17 +285,17 @@ int main(int argc, char* argv[]) {
         AlnBuf alnBuf(vm["rbuf"].as<int>());
         CnsBuf cnsBuf(vm["wbuf"].as<int>());
 
-        Writer writer(&cnsBuf, minLen);
+        Writer writer(&cnsBuf);
         writer.setNumCnsThreads(nthreads);
         boost::thread writerThread(writer);
 
         std::vector<boost::thread> cnsThreads;
         for (int i=0; i < nthreads; i++) {
-            Consensus c(&alnBuf, &cnsBuf);
+            Consensus c(&alnBuf, &cnsBuf, fopts.minLen);
             cnsThreads.push_back(boost::thread(c));
         }
 
-        Reader reader(&alnBuf, input, minCov);
+        Reader reader(&alnBuf, input, fopts.minCov);
         reader.setNumCnsThreads(nthreads);
         boost::thread readerThread(reader);
 
@@ -282,7 +307,7 @@ int main(int argc, char* argv[]) {
         readerThread.join();
     } else {
         logger.info("Single-threaded. Input: %s", argv[1]);
-        alnFileConsensus(input, minCov, minLen);
+        alnFileConsensus(input, fopts);
     }
         
     return 0;

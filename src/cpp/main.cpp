@@ -26,7 +26,16 @@
 #include "Alignment.hpp"
 #include "AlnGraphBoost.hpp"
 #include "BlasrM5AlnProvider.hpp"
+#include "Types.h"
+#include "PlatformId.h"
+#include "Enumerations.h"
+#include "DNASequence.hpp"
+#include "FASTASequence.hpp"
+#include "FASTQSequence.hpp"
+#include "algorithms/alignment/DistanceMatrixScoreFunction.hpp"
 #include "BoundedBuffer.hpp"
+#include "tuples/TupleMetrics.hpp"
+#include "SimpleAligner.hpp"
 
 namespace opts = boost::program_options;
 

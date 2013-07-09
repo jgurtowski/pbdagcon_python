@@ -33,7 +33,9 @@ bool Alignment::groupByTarget = true;
 Alignment::Alignment() : 
     len(0), 
     start(0), 
+    end(0), 
     id(""), 
+    strand('+'), 
     qstr(""), 
     tstr("") { }
 

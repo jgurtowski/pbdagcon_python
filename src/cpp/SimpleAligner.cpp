@@ -5,23 +5,16 @@
 #include "Types.h"
 #include "PlatformId.h"
 #include "Enumerations.h"
-#include "algorithms/alignment/ScoreMatrices.h"
 #include "DNASequence.hpp"
 #include "tuples/TupleMetrics.hpp"
 #include "tuples/TupleList.hpp"
-#include "tuples/BaseTuple.hpp"
 #include "tuples/DNATuple.hpp"
-#include "tuples/TupleMetrics.hpp"
 #include "datastructures/alignment/Path.h"
 #include "datastructures/alignment/AlignmentStats.hpp"
 #include "datastructures/alignment/Alignment.hpp"
 #include "algorithms/alignment/AlignmentUtils.hpp"
-#include "qvs/QualityValue.hpp"
-#include "qvs/QualityValueVector.hpp"
-#include "datastructures/reads/ZMWGroupEntry.hpp"
 #include "FASTASequence.hpp"
 #include "FASTQSequence.hpp"
-#include "algorithms/alignment/BaseScoreFunction.hpp"
 #include "algorithms/alignment/DistanceMatrixScoreFunction.hpp"
 #include "Alignment.hpp"
 #include "algorithms/alignment/sdp/SDPFragment.hpp"
@@ -45,26 +38,25 @@ SimpleAligner::SimpleAligner() {
 void SimpleAligner::align(dagcon::Alignment& aln) {
     // This alignment type defined in blasr code base
     blasr::Alignment blasrAln;
-    int alignScore;
-    Nucleotide* qs = new Nucleotide[aln.qstr.length()];
-    Nucleotide* ts = new Nucleotide[aln.qstr.length()];
-    std::strcpy((char*)qs, aln.qstr.c_str());
-    std::strcpy((char*)ts, aln.tstr.c_str());
     DNASequence query, target;
-    query.seq = qs;
+    query.seq = (Nucleotide*) aln.qstr.c_str();
     query.length = aln.qstr.length();
 
-    target.seq = ts;
+    target.seq = (Nucleotide*)aln.tstr.c_str();
     target.length = aln.tstr.length();
-    alignScore = SDPAlign(query, target,
-                          distScoreFn_, tupleMetrics_.tupleSize,
-                          config_.sdpIndel, config_.sdpIndel, config_.indelRate,
-                          blasrAln,
-                          Global);
+    SDPAlign(query, target, distScoreFn_, tupleMetrics_.tupleSize,
+             config_.sdpIndel, config_.sdpIndel, config_.indelRate,
+             blasrAln, Global);
 
     std::string queryStr, alignStr, targetStr;
     CreateAlignmentStrings(blasrAln, query.seq, target.seq, 
             targetStr, alignStr, queryStr, query.length, target.length);
+
+    if (aln.strand == '-') {
+        aln.start = aln.len - (aln.end + blasrAln.tPos);
+    } else {
+        aln.start += blasrAln.tPos;
+    }
 
     aln.qstr = queryStr;
     aln.tstr = targetStr;

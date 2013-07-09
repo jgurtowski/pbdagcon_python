@@ -19,8 +19,12 @@ public:
     // comforming offsets are 1-based
     uint32_t start;
 
+    uint32_t end;
+
     // ID of the read we're trying to correct, same as ZMW ID
     std::string id;
+
+    char strand;
 
     // query and target strings must be equal length
     std::string qstr;

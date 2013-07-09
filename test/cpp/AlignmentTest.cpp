@@ -5,6 +5,8 @@
 #include <boost/graph/adjacency_list.hpp>
 #include "Alignment.hpp"
 
+using namespace dagcon;
+
 TEST(Alignment, Normalize) {
     Alignment a, b;
     a.start = 1;

@@ -42,7 +42,7 @@ struct FilterOpts {
 ///
 void alnFileConsensus(const std::string file, const FilterOpts& fopts) {
     log4cpp::Category& logger = log4cpp::Category::getInstance("consensus");
-    std::vector<Alignment> alns;
+    std::vector<dagcon::Alignment> alns;
     try {
         BlasrM5AlnProvider* ap;
         if (file == "-") { 
@@ -57,7 +57,7 @@ void alnFileConsensus(const std::string file, const FilterOpts& fopts) {
             if (alns.size() < fopts.minCov) continue;
             AlnGraphBoost ag(alns[0].len);
             for (auto it = alns.begin(); it != alns.end(); ++it) {
-                Alignment aln = normalizeGaps(*it);
+                dagcon::Alignment aln = normalizeGaps(*it);
                 ag.addAln(aln);
             }
         
@@ -81,7 +81,7 @@ void alnFileConsensus(const std::string file, const FilterOpts& fopts) {
     }
 }
 
-typedef std::vector<Alignment> AlnVec;
+typedef std::vector<dagcon::Alignment> AlnVec;
 typedef BoundedBuffer<AlnVec> AlnBuf;
 typedef BoundedBuffer<std::string> CnsBuf;
 
@@ -164,7 +164,7 @@ public:
         while (alns.size() > 0) {
             AlnGraphBoost ag(alns[0].len);
             for (auto it = alns.begin(); it != alns.end(); ++it) {
-                Alignment aln = normalizeGaps(*it);
+                dagcon::Alignment aln = normalizeGaps(*it);
                 ag.addAln(aln);
             }
             ag.mergeNodes();
@@ -267,7 +267,7 @@ int main(int argc, char* argv[]) {
     log4cpp::Category& logger = log4cpp::Category::getInstance("main");
 
     if (vm.count("correct-query")) {
-        Alignment::groupByTarget = false;
+        dagcon::Alignment::groupByTarget = false;
         logger.info("Configured to correct queries");
     } else {
         logger.info("Configured to correct targets");
@@ -306,7 +306,7 @@ int main(int argc, char* argv[]) {
     
         readerThread.join();
     } else {
-        logger.info("Single-threaded. Input: %s", argv[1]);
+        logger.info("Single-threaded. Input: %s", input.c_str());
         alnFileConsensus(input, fopts);
     }
         

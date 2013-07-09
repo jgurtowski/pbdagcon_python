@@ -22,14 +22,18 @@ USER_DIR = ../../src/cpp
 # Flags passed to the preprocessor.
 CPPFLAGS += -I$(GTEST_DIR) -I$(GTEST_DIR)/include \
 			-I../../../../../ThirdParty/boost/boost_1_47_0 \
+			-I../../../../../assembly/cpp/common \
+            -I../../../../../private/blasr/src \
 			-I$(USER_DIR)
 
+BLASR_ARCH := ../../../../../private/blasr/src/libblasr.a
+
 # Flags passed to the C++ compiler.
-CXXFLAGS += -g -std=c++0x
+CXXFLAGS += -g -std=c++0x -fpermissive
 
 # All tests produced by this Makefile.  Remember to add new tests you
 # created to the list.
-TESTS = test_alngraph test_alignment
+TESTS = test_alngraph test_alignment test_simple_aligner
 
 # All Google Test headers.  Usually you shouldn't change this
 # definition.
@@ -81,8 +85,17 @@ Alignment.o : $(USER_DIR)/Alignment.cpp $(USER_DIR)/Alignment.hpp $(GTEST_HEADER
 AlignmentTest.o : AlignmentTest.cpp
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c AlignmentTest.cpp
 
+SimpleAligner.o: $(USER_DIR)/SimpleAligner.cpp $(GTEST_HEADERS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(USER_DIR)/SimpleAligner.cpp
+
+SimpleAlignerTest.o: SimpleAlignerTest.cpp
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c SimpleAlignerTest.cpp
+
 test_alngraph: AlnGraphBoost.o AlnGraphBoostTest.o Alignment.o gtest_main.a
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@
 
 test_alignment: Alignment.o AlignmentTest.o gtest_main.a
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@
+
+test_simple_aligner: Alignment.o SimpleAlignerTest.o SimpleAligner.o $(BLASR_ARCH) gtest_main.a
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@

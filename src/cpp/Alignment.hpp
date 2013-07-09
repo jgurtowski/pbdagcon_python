@@ -7,6 +7,7 @@
 /// may be either the target or the query, depending on how the alignment was
 /// done.
 ///
+namespace dagcon {
 class Alignment {
 public:
     // May correct the target or the query, default is target
@@ -30,8 +31,9 @@ public:
     // input m5 stream
     void parse(std::istream& instrm);
 };
+}
 
-std::istream& operator>>(std::istream& instrm, Alignment& data);
+std::istream& operator>>(std::istream& instrm, dagcon::Alignment& data);
 
 /// Simplifies the alignment by normalizing gaps.  Converts mismatches into
 /// indels ... 
@@ -48,6 +50,6 @@ std::istream& operator>>(std::istream& instrm, Alignment& data);
 ///      query: -C--CGT       query: CCG--T
 ///              |  | |  --->        |||  |
 ///     target: CCGAC-T      target: CCGACT  
-Alignment normalizeGaps(Alignment& aln);
+dagcon::Alignment normalizeGaps(dagcon::Alignment& aln);
 
 #endif // __GCON_ALIGNMENT_HPP__

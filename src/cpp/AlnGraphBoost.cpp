@@ -57,7 +57,7 @@ AlnGraphBoost::AlnGraphBoost(const size_t blen) {
     _g[_exitVtx].backbone = true;
 }
 
-void AlnGraphBoost::addAln(Alignment& aln) {
+void AlnGraphBoost::addAln(dagcon::Alignment& aln) {
     IndexMap index = boost::get(boost::vertex_index, _g);
     // tracks the position on the backbone
     uint32_t bbPos = aln.start;

@@ -32,7 +32,7 @@ BlasrM5AlnProvider::~BlasrM5AlnProvider() {
     delete is_;
 }
 
-bool BlasrM5AlnProvider::nextTarget(std::vector<Alignment>& dest) {
+bool BlasrM5AlnProvider::nextTarget(std::vector<dagcon::Alignment>& dest) {
     // first clear any previous alignments
     dest.clear();
 
@@ -41,7 +41,7 @@ bool BlasrM5AlnProvider::nextTarget(std::vector<Alignment>& dest) {
     if (! firstAln_)
         dest.push_back(prevAln_); 
 
-    Alignment aln;
+    dagcon::Alignment aln;
     while (*is_ >> aln) {
         if (aln.id != currId_) {
             firstAln_ = false;
@@ -81,7 +81,7 @@ void BlasrM5AlnProvider::checkFormat() {
     }
 
     // check how the alignments are grouped
-    Alignment aln;
+    dagcon::Alignment aln;
     std::vector<std::string> raw, sorted;
     int max = 50, count = 0;
     while(ifs >> aln && count++ < max) 
@@ -90,10 +90,10 @@ void BlasrM5AlnProvider::checkFormat() {
     sorted = raw;
     std::sort(sorted.begin(), sorted.end());
 
-    std::string logl = "Alignments appear to be grouped by %s";
+    std::string logl = "dagcon::Alignments appear to be grouped by %s";
     if (raw != sorted) {
         logger.info(logl.c_str(), "query");
-        Alignment::groupByTarget = false;
+        dagcon::Alignment::groupByTarget = false;
     } else {
         logger.info(logl.c_str(), "target");
     }

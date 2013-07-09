@@ -42,7 +42,7 @@ public:
     /// prior to adding the next set of alignments.
     /// \param dest reference to a vector to hold the alignments.
     /// \return True if there are more targets, otherwise false.
-    bool nextTarget(std::vector<Alignment>& dest);
+    bool nextTarget(std::vector<dagcon::Alignment>& dest);
     
     /// Called during constructor, checks that the file is formatted correctly.
     /// Also determines if the input is grouped by query or target.
@@ -54,7 +54,7 @@ private:
 
     /// State variables 
     std::string currId_;
-    Alignment prevAln_;
+    dagcon::Alignment prevAln_;
     bool firstAln_;
     
     /// Represents an input stream to the alignments.

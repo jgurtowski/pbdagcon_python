@@ -7,6 +7,8 @@
 #include <cassert>
 #include "Alignment.hpp"
 
+using namespace dagcon;
+
 ///
 /// Simple method to reverse complement a sequence.
 ///

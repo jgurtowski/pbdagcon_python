@@ -8,10 +8,10 @@ BLASR_ARCH := ../../../../../private/blasr/src/libblasr.a
 CXX_OPTS := -I $(BLASR_COMMON) -I $(LOG4CPP)/include -I $(BOOST) -std=c++0x -g -Wall -Wuninitialized -Wno-div-by-zero -fpermissive -pedantic -c -fmessage-length=0 -MMD -MP
 #CXX_OPTS := -I $(LOG4CPP)/include -I $(BOOST) -std=c++0x -O2 -c -fmessage-length=0 -MMD -MP
 
-all: gcon 
+all: pbdagcon 
 
-gcon: main.o AlnGraphBoost.o Alignment.o BlasrM5AlnProvider.o SimpleAligner.o $(BLASR_ARCH) $(LOG4CPP)/src/.libs/liblog4cpp.a $(BOOST_THREAD_ARCH) $(BOOST_OPTS_ARCH)
-	$(CXX) -o gcon $^ -lpthread
+pbdagcon: main.o AlnGraphBoost.o Alignment.o BlasrM5AlnProvider.o SimpleAligner.o $(BLASR_ARCH) $(LOG4CPP)/src/.libs/liblog4cpp.a $(BOOST_THREAD_ARCH) $(BOOST_OPTS_ARCH)
+	$(CXX) -o $@ $^ -lpthread
 
 %.o: %.cpp | $(LOG4CPP)/include/log4cpp/config.h
 	$(CXX) $(CXX_OPTS) -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
@@ -25,6 +25,6 @@ $(LOG4CPP)/include/log4cpp/config.h:
 clean:
 	rm -f *.d
 	rm -f *.o
-	rm -f gcon
+	rm -f pbdagcon
 
 .PHONY: all clean

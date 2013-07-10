@@ -23,8 +23,11 @@ public:
 
     uint32_t end;
 
-    // ID of the read we're trying to correct, same as ZMW ID
+    // ID of the read we're trying to correct (target)
     std::string id;
+
+    // ID of the supporting read (query)
+    std::string sid; 
 
     char strand;
 

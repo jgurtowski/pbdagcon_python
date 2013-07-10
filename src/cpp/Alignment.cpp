@@ -35,6 +35,7 @@ Alignment::Alignment() :
     start(0), 
     end(0), 
     id(""), 
+    sid(""), 
     strand('+'), 
     qstr(""), 
     tstr("") { }
@@ -57,6 +58,7 @@ void parseM5(std::istream& stream, Alignment* aln) {
     // base query id (without the last '/<coordinates>'), allows us to 
     // group properly by query when asked.
     std::string baseQid = fields[0].substr(0,fields[0].find_last_of("/"));
+    aln->sid = fields[0];
     aln->id = Alignment::groupByTarget ? fields[5] : baseQid; 
 
     std::istringstream ssLen(Alignment::groupByTarget ? fields[6] : fields[1]);
@@ -92,6 +94,7 @@ void parsePre(std::istream& stream, Alignment* aln) {
     if (fields.size() == 0) return;
 
     // qid, tid, strand, tlen, tstart, tend, qstr, tstr
+    aln->sid = fields[0];
     aln->id = fields[1];
     aln->strand = fields[2][0];
 
@@ -104,8 +107,13 @@ void parsePre(std::istream& stream, Alignment* aln) {
     std::istringstream ssEnd(fields[5]);
     ssEnd >> aln->end;
 
-    aln->qstr = fields[6];
-    aln->tstr = fields[7];
+    if (aln->strand == '-') {
+        aln->qstr = revComp(fields[6]);
+        aln->tstr = revComp(fields[7]);
+    } else {
+        aln->qstr = fields[6];
+        aln->tstr = fields[7];
+    }
 }
 
 // default to parsing m5

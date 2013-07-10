@@ -46,6 +46,8 @@ bool AlignFirst = false;
 /// Single-threaded consensus execution.
 ///
 void alnFileConsensus(AlnProvider* ap, const FilterOpts& fopts) {
+    log4cpp::Category& logger = 
+        log4cpp::Category::getInstance("afc");
     std::vector<dagcon::Alignment> alns;
     SimpleAligner aligner;
     bool hasNext = true;
@@ -58,7 +60,13 @@ void alnFileConsensus(AlnProvider* ap, const FilterOpts& fopts) {
 
         AlnGraphBoost ag(alns[0].len);
         for (auto it = alns.begin(); it != alns.end(); ++it) {
+            boost::format msg("%s %s %s %s");
+            msg % (*it).sid;
+            msg % (*it).strand;
+            msg % (*it).qstr.substr(0, 60);
             dagcon::Alignment aln = normalizeGaps(*it);
+            msg % (*it).qstr.substr(0, 60);
+            logger.debugStream() << msg.str();
             ag.addAln(aln);
         }
     

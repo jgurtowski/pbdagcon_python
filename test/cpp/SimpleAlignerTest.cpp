@@ -2,23 +2,7 @@
 #include <string>
 #include <algorithm>
 #include <gtest/gtest.h>
-#include "Types.h"
-#include "PlatformId.h"
-#include "Enumerations.h"
-#include "DNASequence.hpp"
-#include "tuples/TupleList.hpp"
-#include "tuples/DNATuple.hpp"
-#include "tuples/TupleMetrics.hpp"
-#include "datastructures/alignment/Path.h"
-#include "datastructures/alignment/AlignmentStats.hpp"
-#include "datastructures/alignment/Alignment.hpp"
-#include "algorithms/alignment/AlignmentUtils.hpp"
-#include "FASTASequence.hpp"
-#include "FASTQSequence.hpp"
-#include "algorithms/alignment/DistanceMatrixScoreFunction.hpp"
 #include "Alignment.hpp"
-#include "algorithms/alignment/sdp/SDPFragment.hpp"
-#include "algorithms/alignment/SDPAlign.hpp"
 #include "SimpleAligner.hpp"
 
 TEST(SimpleAligner, align) {

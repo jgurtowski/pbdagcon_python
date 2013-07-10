@@ -45,6 +45,7 @@ void SimpleAligner::align(dagcon::Alignment& aln) {
 
     aln.qstr = queryStr;
     aln.tstr = targetStr;
+
 }
 
 void SimpleAligner::operator() (dagcon::Alignment& aln) {

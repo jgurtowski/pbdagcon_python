@@ -10,6 +10,8 @@
 namespace dagcon {
 class Alignment {
 public:
+    typedef void (*ParseFunc)(std::istream&, Alignment* aln);
+
     // May correct the target or the query, default is target
     static bool groupByTarget;
 
@@ -32,12 +34,15 @@ public:
 
     Alignment();
 
-    // input m5 stream
-    void parse(std::istream& instrm);
+    static ParseFunc parse;
 };
 }
 
 std::istream& operator>>(std::istream& instrm, dagcon::Alignment& data);
+
+void parseM5(std::istream& stream, dagcon::Alignment* aln);
+
+void parsePre(std::istream& stream, dagcon::Alignment* aln);
 
 /// Simplifies the alignment by normalizing gaps.  Converts mismatches into
 /// indels ... 

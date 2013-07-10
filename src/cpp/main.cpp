@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <algorithm>
 #include <log4cpp/Category.hh>
 #include <log4cpp/Appender.hh>
 #include <log4cpp/FileAppender.hh>
@@ -26,13 +27,6 @@
 #include "Alignment.hpp"
 #include "AlnGraphBoost.hpp"
 #include "BlasrM5AlnProvider.hpp"
-#include "Types.h"
-#include "PlatformId.h"
-#include "Enumerations.h"
-#include "DNASequence.hpp"
-#include "FASTASequence.hpp"
-#include "FASTQSequence.hpp"
-#include "algorithms/alignment/DistanceMatrixScoreFunction.hpp"
 #include "BoundedBuffer.hpp"
 #include "tuples/TupleMetrics.hpp"
 #include "SimpleAligner.hpp"
@@ -46,47 +40,33 @@ struct FilterOpts {
     size_t minLen;
 } fopts;
 
+bool AlignFirst = false;
+
 ///
 /// Single-threaded consensus execution.
 ///
-void alnFileConsensus(const std::string file, const FilterOpts& fopts) {
-    log4cpp::Category& logger = log4cpp::Category::getInstance("consensus");
+void alnFileConsensus(AlnProvider* ap, const FilterOpts& fopts) {
     std::vector<dagcon::Alignment> alns;
-    try {
-        BlasrM5AlnProvider* ap;
-        if (file == "-") { 
-            ap = new BlasrM5AlnProvider(&std::cin);
-        } else {
-            ap = new BlasrM5AlnProvider(file);
-        }
+    SimpleAligner aligner;
+    bool hasNext = true;
+    while (hasNext) {
+        hasNext = ap->nextTarget(alns);
+        if (alns.size() < fopts.minCov) continue;
 
-        bool hasNext = true;
-        while (hasNext) {
-            hasNext = ap->nextTarget(alns);
-            if (alns.size() < fopts.minCov) continue;
-            AlnGraphBoost ag(alns[0].len);
-            for (auto it = alns.begin(); it != alns.end(); ++it) {
-                dagcon::Alignment aln = normalizeGaps(*it);
-                ag.addAln(aln);
-            }
-        
-            ag.mergeNodes();
-            std::string cns = ag.consensus(fopts.minCov);
-            if (cns.length() < fopts.minLen) continue;
-            std::cout << ">" << alns[0].id << std::endl;
-            std::cout << cns << std::endl;
+        if (AlignFirst) 
+            for_each(alns.begin(), alns.end(), aligner); 
+
+        AlnGraphBoost ag(alns[0].len);
+        for (auto it = alns.begin(); it != alns.end(); ++it) {
+            dagcon::Alignment aln = normalizeGaps(*it);
+            ag.addAln(aln);
         }
-    } 
-    catch (M5Exception::FileOpenError) {
-        logger.error("Error opening file: %s", file.c_str());
-        return;
-    }
-    catch (M5Exception::FormatError err) {
-        logger.error("Format error. Input: %s, Error: %s", 
-            file.c_str(), err.msg.c_str());
-    }
-    catch (M5Exception::SortError err) {
-        logger.error("Input file is not sorted by either target or query.");
+    
+        ag.mergeNodes();
+        std::string cns = ag.consensus(fopts.minCov);
+        if (cns.length() < fopts.minLen) continue;
+        std::cout << ">" << alns[0].id << std::endl;
+        std::cout << cns << std::endl;
     }
 }
 
@@ -114,7 +94,7 @@ public:
         log4cpp::Category& logger = 
             log4cpp::Category::getInstance("Reader");
         try {
-            BlasrM5AlnProvider* ap;
+            AlnProvider* ap;
             if (fpath_ == "-") { 
                 ap = new BlasrM5AlnProvider(&std::cin);
             } else {
@@ -156,6 +136,7 @@ class Consensus {
     CnsBuf* cnsBuf_;
     size_t minLen_;
     int minWeight_;
+    SimpleAligner aligner;
 public:
     Consensus(AlnBuf* ab, CnsBuf* cb, size_t minLen) : 
         alnBuf_(ab), 
@@ -166,9 +147,12 @@ public:
 
     void operator()() {
         log4cpp::Category& logger = 
-            log4cpp::Category::getInstance("Writer");
+            log4cpp::Category::getInstance("Consensus");
         AlnVec alns;
         alnBuf_->pop(&alns);
+
+        if (AlignFirst) 
+            for_each(alns.begin(), alns.end(), aligner); 
 
         while (alns.size() > 0) {
             AlnGraphBoost ag(alns[0].len);
@@ -221,7 +205,7 @@ public:
 
 void setupLogger(log4cpp::Priority::Value priority) {
     // Setup the root logger to a file
-    log4cpp::Appender *fapp = new log4cpp::FileAppender("default", "gcon.log", false);
+    log4cpp::Appender *fapp = new log4cpp::FileAppender("default", "pbdagcon.log", false);
     log4cpp::PatternLayout *layout = new log4cpp::PatternLayout();
     layout->setConversionPattern("%d %p [%c] %m%n");
     fapp->setLayout(layout); 
@@ -236,6 +220,7 @@ bool parseOpts(int ac, char* av[], opts::variables_map& vm) {
     odesc.add_options()
         ("help,h", "Display this help")
         ("verbose,v", "Increase logging verbosity")
+        ("align,a", "Align sequences before adding to consensus")
         ("min-length,m", opts::value<int>()->default_value(500), 
             "Filter corrected reads less than length")
         ("min-coverage,c", opts::value<int>()->default_value(8),
@@ -274,6 +259,11 @@ int main(int argc, char* argv[]) {
     // defaults to INFO.
     setupLogger(vm.count("verbose") ? 700 : 600);
     log4cpp::Category& logger = log4cpp::Category::getInstance("main");
+
+    if (vm.count("align")) {
+        dagcon::Alignment::parse = parsePre;
+        AlignFirst = true;
+    }
 
     if (vm.count("correct-query")) {
         dagcon::Alignment::groupByTarget = false;
@@ -315,8 +305,27 @@ int main(int argc, char* argv[]) {
     
         readerThread.join();
     } else {
+        AlnProvider* ap;
+        try {
+            if (input == "-") { 
+                ap = new BlasrM5AlnProvider(&std::cin);
+            } else {
+                ap = new BlasrM5AlnProvider(input);
+            }
+        } 
+        catch (M5Exception::FileOpenError) {
+            logger.error("Error opening file: %s", input.c_str());
+            exit(1);
+        }
+        catch (M5Exception::FormatError err) {
+            logger.error("Format error. Input: %s, Error: %s", 
+                input.c_str(), err.msg.c_str());
+        }
+        catch (M5Exception::SortError err) {
+            logger.error("Input file is not sorted by either target or query.");
+        }
         logger.info("Single-threaded. Input: %s", input.c_str());
-        alnFileConsensus(input, fopts);
+        alnFileConsensus(ap, fopts);
     }
         
     return 0;

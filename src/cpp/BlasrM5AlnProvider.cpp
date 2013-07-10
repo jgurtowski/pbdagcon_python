@@ -15,7 +15,7 @@ BlasrM5AlnProvider::BlasrM5AlnProvider(const std::string& fpath) :
     firstAln_(true),
     fs_() {
 
-    checkFormat();
+    //checkFormat();
     fs_.open(fpath_);
     is_ = &fs_;
 }

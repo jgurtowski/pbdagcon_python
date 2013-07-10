@@ -40,9 +40,9 @@ Alignment::Alignment() :
     tstr("") { }
 
 // Parses blasr m5 output grouped either by target or query.
-void Alignment::parse(std::istream& instrm) {
+void parseM5(std::istream& stream, Alignment* aln) {
     std::string line;
-    std::getline(instrm, line);
+    std::getline(stream, line);
     std::stringstream row(line);
     std::string col;
     std::vector<std::string> fields;
@@ -57,28 +57,62 @@ void Alignment::parse(std::istream& instrm) {
     // base query id (without the last '/<coordinates>'), allows us to 
     // group properly by query when asked.
     std::string baseQid = fields[0].substr(0,fields[0].find_last_of("/"));
-    id = groupByTarget ? fields[5] : baseQid; 
+    aln->id = Alignment::groupByTarget ? fields[5] : baseQid; 
 
-    std::istringstream ssLen(groupByTarget ? fields[6] : fields[1]);
-    ssLen >> len;
-    std::istringstream ssStart(groupByTarget ? fields[7] : fields[2]);
-    ssStart >> start;
-    start++;
+    std::istringstream ssLen(Alignment::groupByTarget ? fields[6] : fields[1]);
+    ssLen >> aln->len;
+    std::istringstream ssStart(Alignment::groupByTarget ? fields[7] : fields[2]);
+    ssStart >> aln->start;
+    aln->start++;
 
     // the target is always reversed.
-    char tStrand = fields[9][0];
-    if (tStrand == '-' && groupByTarget) {
+    aln->strand = fields[9][0];
+    if (aln->strand == '-' && Alignment::groupByTarget) {
         // only need to reverse complement when correcting targets
-        qstr = revComp(fields[16]);
-        tstr = revComp(fields[18]);
+        aln->qstr = revComp(fields[16]);
+        aln->tstr = revComp(fields[18]);
     } else {
-        qstr = groupByTarget ? fields[16] : fields[18];
-        tstr = groupByTarget ? fields[18] : fields[16];
+        aln->qstr = Alignment::groupByTarget ? fields[16] : fields[18];
+        aln->tstr = Alignment::groupByTarget ? fields[18] : fields[16];
     }
 }
 
+void parsePre(std::istream& stream, Alignment* aln) {
+    std::string line;
+    std::getline(stream, line);
+    std::stringstream row(line);
+    std::string col;
+    std::vector<std::string> fields;
+    while(std::getline(row, col, ' ')) {
+        if (col == "") continue;
+        fields.push_back(col);
+    }
+
+    // avoids *some* empty lines
+    if (fields.size() == 0) return;
+
+    // qid, tid, strand, tlen, tstart, tend, qstr, tstr
+    aln->id = fields[1];
+    aln->strand = fields[2][0];
+
+    std::istringstream ssLen(fields[3]);
+    ssLen >> aln->len;
+
+    std::istringstream ssStart(fields[4]);
+    ssStart >> aln->start;
+
+    std::istringstream ssEnd(fields[5]);
+    ssEnd >> aln->end;
+
+    aln->qstr = fields[6];
+    aln->tstr = fields[7];
+}
+
+// default to parsing m5
+Alignment::ParseFunc Alignment::parse = parseM5;
+
 std::istream& operator>>(std::istream& instrm, Alignment& data) {
-    data.parse(instrm);
+    data.parse(instrm, &data);
     return instrm;
 }
 

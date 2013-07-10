@@ -2,23 +2,7 @@
 #include <cstring>
 #include <string>
 #include <algorithm>
-#include "Types.h"
-#include "PlatformId.h"
-#include "Enumerations.h"
-#include "DNASequence.hpp"
-#include "tuples/TupleMetrics.hpp"
-#include "tuples/TupleList.hpp"
-#include "tuples/DNATuple.hpp"
-#include "datastructures/alignment/Path.h"
-#include "datastructures/alignment/AlignmentStats.hpp"
-#include "datastructures/alignment/Alignment.hpp"
-#include "algorithms/alignment/AlignmentUtils.hpp"
-#include "FASTASequence.hpp"
-#include "FASTQSequence.hpp"
-#include "algorithms/alignment/DistanceMatrixScoreFunction.hpp"
 #include "Alignment.hpp"
-#include "algorithms/alignment/sdp/SDPFragment.hpp"
-#include "algorithms/alignment/SDPAlign.hpp"
 #include "SimpleAligner.hpp"
 
 SimpleAligner::SimpleAligner() {
@@ -39,7 +23,7 @@ void SimpleAligner::align(dagcon::Alignment& aln) {
     // This alignment type defined in blasr code base
     blasr::Alignment blasrAln;
     DNASequence query, target;
-    query.seq = (Nucleotide*) aln.qstr.c_str();
+    query.seq = (Nucleotide*)aln.qstr.c_str();
     query.length = aln.qstr.length();
 
     target.seq = (Nucleotide*)aln.tstr.c_str();
@@ -57,7 +41,12 @@ void SimpleAligner::align(dagcon::Alignment& aln) {
     } else {
         aln.start += blasrAln.tPos;
     }
+    aln.start++;
 
     aln.qstr = queryStr;
     aln.tstr = targetStr;
+}
+
+void SimpleAligner::operator() (dagcon::Alignment& aln) {
+    align(aln);
 }

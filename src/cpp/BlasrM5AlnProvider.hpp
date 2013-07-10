@@ -1,5 +1,7 @@
-#ifndef __GCON_ALN_PROVIDER__
-#define __GCON_ALN_PROVIDER__
+#ifndef __GCON_BLASRM5_ALN_PROVIDER__
+#define __GCON_BLASRM5_ALN_PROVIDER__
+
+#include "AlnProvider.hpp"
 
 ///
 /// Exceptions thrown by this class
@@ -22,7 +24,7 @@ namespace M5Exception {
 /// targets.  However, we can avoid the sort step if we can correct the reads 
 /// as queries, since blasr groups alignments by query.
 ///
-class BlasrM5AlnProvider {
+class BlasrM5AlnProvider : public AlnProvider {
 public:
     /// Constructs a new alignment provider.  Checks the format of the file and
     /// throws an exception if it's malformed.
@@ -35,7 +37,7 @@ public:
     BlasrM5AlnProvider(std::istream* stream);
     
     /// Cleans up some stuff.
-    virtual ~BlasrM5AlnProvider();
+    ~BlasrM5AlnProvider();
 
     /// Gets the set of alignments for the next target and puts them into the
     /// given vector.  Note this function will clear the contents of the vector
@@ -62,4 +64,4 @@ private:
     std::istream* is_;
 };
 
-#endif //__GCON_ALN_PROVIDER__
+#endif //__GCON_BLASRM5_ALN_PROVIDER__

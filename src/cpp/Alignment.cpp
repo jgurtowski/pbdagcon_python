@@ -107,20 +107,15 @@ void parsePre(std::istream& stream, Alignment* aln) {
     std::istringstream ssEnd(fields[5]);
     ssEnd >> aln->end;
 
-    if (aln->strand == '-') {
-        aln->qstr = revComp(fields[6]);
-        aln->tstr = revComp(fields[7]);
-    } else {
-        aln->qstr = fields[6];
-        aln->tstr = fields[7];
-    }
+    aln->qstr = fields[6];
+    aln->tstr = fields[7];
 }
 
 // default to parsing m5
 Alignment::ParseFunc Alignment::parse = parseM5;
 
 std::istream& operator>>(std::istream& instrm, Alignment& data) {
-    data.parse(instrm, &data);
+    Alignment::parse(instrm, &data);
     return instrm;
 }
 
@@ -183,8 +178,10 @@ Alignment normalizeGaps(Alignment& aln) {
     // generate the final, normalized alignment strings
     Alignment finalNorm;
     finalNorm.id = aln.id;
+    finalNorm.sid = aln.sid;
     finalNorm.start = aln.start;
     finalNorm.len = aln.len;
+    finalNorm.strand = aln.strand;
     for (size_t i=0; i < qlen; i++) {
         if (qNorm[i] != '-' || tNorm[i] != '-') {
             finalNorm.qstr += qNorm[i];

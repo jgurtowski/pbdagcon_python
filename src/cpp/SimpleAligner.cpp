@@ -38,14 +38,14 @@ void SimpleAligner::align(dagcon::Alignment& aln) {
 
     if (aln.strand == '-') {
         aln.start = aln.len - (aln.end + blasrAln.tPos);
+        aln.qstr = revComp(queryStr);
+        aln.tstr = revComp(targetStr);
     } else {
         aln.start += blasrAln.tPos;
+        aln.qstr = queryStr;
+        aln.tstr = targetStr;
     }
     aln.start++;
-
-    aln.qstr = queryStr;
-    aln.tstr = targetStr;
-
 }
 
 void SimpleAligner::operator() (dagcon::Alignment& aln) {

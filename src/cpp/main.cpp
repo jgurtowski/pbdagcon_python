@@ -60,19 +60,20 @@ void alnFileConsensus(AlnProvider* ap, const FilterOpts& fopts) {
 
         AlnGraphBoost ag(alns[0].len);
         for (auto it = alns.begin(); it != alns.end(); ++it) {
-            boost::format msg("%s %s %s %s");
-            msg % (*it).sid;
-            msg % (*it).strand;
-            msg % (*it).qstr.substr(0, 60);
             dagcon::Alignment aln = normalizeGaps(*it);
-            msg % (*it).qstr.substr(0, 60);
+            boost::format msg("%s %s %s %d %d");
+            msg % aln.sid;
+            msg % aln.strand;
+            msg % aln.qstr.substr(aln.qstr.length()-50, 50);
+            msg % aln.start;
+            msg % aln.qstr.length();
             logger.debugStream() << msg.str();
             ag.addAln(aln);
         }
     
         ag.mergeNodes();
         std::string cns = ag.consensus(fopts.minCov);
-        if (cns.length() < fopts.minLen) continue;
+        if (cns.length() < fopts.minLen) continue; 
         std::cout << ">" << alns[0].id << std::endl;
         std::cout << cns << std::endl;
     }
@@ -159,10 +160,10 @@ public:
         AlnVec alns;
         alnBuf_->pop(&alns);
 
-        if (AlignFirst) 
-            for_each(alns.begin(), alns.end(), aligner); 
-
         while (alns.size() > 0) {
+            if (AlignFirst) 
+                for_each(alns.begin(), alns.end(), aligner); 
+
             AlnGraphBoost ag(alns[0].len);
             for (auto it = alns.begin(); it != alns.end(); ++it) {
                 dagcon::Alignment aln = normalizeGaps(*it);
@@ -320,6 +321,8 @@ int main(int argc, char* argv[]) {
             } else {
                 ap = new BlasrM5AlnProvider(input);
             }
+            logger.info("Single-threaded. Input: %s", input.c_str());
+            alnFileConsensus(ap, fopts);
         } 
         catch (M5Exception::FileOpenError) {
             logger.error("Error opening file: %s", input.c_str());
@@ -332,8 +335,6 @@ int main(int argc, char* argv[]) {
         catch (M5Exception::SortError err) {
             logger.error("Input file is not sorted by either target or query.");
         }
-        logger.info("Single-threaded. Input: %s", input.c_str());
-        alnFileConsensus(ap, fopts);
     }
         
     return 0;

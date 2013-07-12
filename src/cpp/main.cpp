@@ -161,6 +161,11 @@ public:
         alnBuf_->pop(&alns);
 
         while (alns.size() > 0) {
+            if (alns.size() < fopts.minCov) {
+                alnBuf_->pop(&alns);
+                continue;
+            }
+
             if (AlignFirst) 
                 for_each(alns.begin(), alns.end(), aligner); 
 

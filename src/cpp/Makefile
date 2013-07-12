@@ -7,6 +7,9 @@ BLASR_COMMON := ../../../../../private/blasr/src
 BLASR_ARCH := ../../../../../private/blasr/src/libblasr.a
 CXX_OPTS := -I $(BLASR_COMMON) -I $(LOG4CPP)/include -I $(BOOST) -std=c++0x -Wall -Wuninitialized -Wno-div-by-zero -fpermissive -pedantic -c -fmessage-length=0 -MMD -MP
 
+SRCS := $(wildcard *.cpp)
+OBJS := $(SRCS:.cpp=.o)
+
 all : CXXFLAGS = -O2
 
 all: pbdagcon 
@@ -15,7 +18,7 @@ debug : CXXFLAGS = -g -O0 -fno-inline
 
 debug: pbdagcon
 
-pbdagcon: main.o AlnGraphBoost.o Alignment.o BlasrM5AlnProvider.o SimpleAligner.o $(BLASR_ARCH) $(LOG4CPP)/src/.libs/liblog4cpp.a $(BOOST_THREAD_ARCH) $(BOOST_OPTS_ARCH)
+pbdagcon: $(OBJS) $(BLASR_ARCH) $(LOG4CPP)/src/.libs/liblog4cpp.a $(BOOST_THREAD_ARCH) $(BOOST_OPTS_ARCH)
 	$(CXX) -o $@ $^ -lpthread
 
 %.o: %.cpp | $(LOG4CPP)/include/log4cpp/config.h

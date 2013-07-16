@@ -71,6 +71,7 @@ void alnFileConsensus(AlnProvider* ap, const FilterOpts& fopts) {
             ag.addAln(aln);
         }
     
+        ag.danglingNodes();
         ag.mergeNodes();
         std::string cns = ag.consensus(fopts.minCov);
         if (cns.length() < fopts.minLen) continue; 

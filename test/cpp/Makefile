@@ -24,9 +24,11 @@ CPPFLAGS += -I$(GTEST_DIR) -I$(GTEST_DIR)/include \
 			-I../../../../../ThirdParty/boost/boost_1_47_0 \
 			-I../../../../../assembly/cpp/common \
             -I../../../../../private/blasr/src \
+            -I../../../../../ThirdParty/log4cpp/log4cpp-1.0/include \
 			-I$(USER_DIR)
 
 BLASR_ARCH := ../../../../../private/blasr/src/libblasr.a
+LOG4CPP_ARCH := ../../../../../ThirdParty/log4cpp/log4cpp-1.0/src/.libs/liblog4cpp.a
 
 # Flags passed to the C++ compiler.
 CXXFLAGS += -g -std=c++0x -fpermissive
@@ -91,8 +93,8 @@ SimpleAligner.o: $(USER_DIR)/SimpleAligner.cpp $(GTEST_HEADERS)
 SimpleAlignerTest.o: SimpleAlignerTest.cpp
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c SimpleAlignerTest.cpp
 
-test_alngraph: AlnGraphBoost.o AlnGraphBoostTest.o Alignment.o gtest_main.a
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@
+test_alngraph: AlnGraphBoost.o AlnGraphBoostTest.o Alignment.o $(LOG4CPP_ARCH) gtest_main.a
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@ -lpthread
 
 test_alignment: Alignment.o AlignmentTest.o gtest_main.a
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@

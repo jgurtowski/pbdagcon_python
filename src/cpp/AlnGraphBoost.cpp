@@ -5,6 +5,7 @@
 #include <queue>
 #include <map>
 #include <vector>
+#include <boost/format.hpp>
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/graphviz.hpp>
@@ -50,6 +51,7 @@ AlnGraphBoost::AlnGraphBoost(const size_t blen) {
         VtxDesc v = *curr;
         _g[v].backbone = true;
         _g[v].weight = 1;
+        _g[v].deleted = false;
         _bbMap[v] = v;
     }
     _exitVtx = *curr;
@@ -91,11 +93,13 @@ void AlnGraphBoost::addAln(dagcon::Alignment& aln) {
             _g[newVtx].base = queryBase;
             _g[newVtx].weight++;
             _g[newVtx].backbone = false;
+            _g[newVtx].deleted = false;
             _bbMap[newVtx] = bbPos;
             addEdge(prevVtx, newVtx);
             prevVtx = newVtx;
         }
     }
+    addEdge(prevVtx, _exitVtx);
 }
 
 void AlnGraphBoost::addEdge(VtxDesc u, VtxDesc v) {
@@ -259,6 +263,7 @@ void AlnGraphBoost::mergeOutNodes(VtxDesc n) {
 }
 
 void AlnGraphBoost::markForReaper(VtxDesc n) {
+    _g[n].deleted = true;
     clear_vertex(n, _g);
     _reaperBag.push_back(n);
 }
@@ -406,6 +411,31 @@ void AlnGraphBoost::printGraph() {
     boost::write_graphviz(std::cout, _g, 
         make_label_writer(get(&AlnNode::base, _g)),
         make_label_writer(get(&AlnEdge::count, _g)));
+}
+
+bool AlnGraphBoost::danglingNodes() {
+    log4cpp::Category& logger = 
+        log4cpp::Category::getInstance("AlnGraph");
+    boost::format msg("Found dangling node. No %s edges: %d");
+    VtxIter curr, last;
+    tie(curr, last) = boost::vertices(_g);
+    bool found = false;
+    for (;curr != last; ++curr) {
+        if (_g[*curr].deleted)
+            continue;
+        if (_g[*curr].base == _g[_enterVtx].base || _g[*curr].base == _g[_exitVtx].base) 
+            continue;
+
+        int indeg = out_degree(*curr, _g); 
+        int outdeg = in_degree(*curr, _g); 
+        if (outdeg > 0 && indeg > 0) continue;
+
+        msg % (outdeg == 0 ? "outgoing" : "incoming");
+        msg % *curr;
+        logger.errorStream() << msg.str();
+        found = true;
+    }
+    return found;
 }
 
 AlnGraphBoost::~AlnGraphBoost(){}

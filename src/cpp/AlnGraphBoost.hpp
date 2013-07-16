@@ -1,5 +1,7 @@
 #ifndef __GCON_ALNGRAPHBOOST_HPP__
 #define __GCON_ALNGRAPHBOOST_HPP__
+
+#include <log4cpp/Category.hh>
   
 /// Alignment graph representation and consensus caller.  Based on the original
 /// Python implementation, pbdagcon.  This class is modelled after its 
@@ -25,6 +27,7 @@ struct AlnNode {
     int weight; ///< Number of reads that align to this node *with the same base*, but not
                 ///< necessarily represented in the target.
     bool backbone; ///< Is this node based on the reference
+    bool deleted; ///< mark for removed as part of the merging process
     graphTraits::edge_descriptor bestInEdge; ///< Best scoring in edge
     graphTraits::edge_descriptor bestOutEdge; ///< Best scoring out edge
 };
@@ -105,6 +108,9 @@ public:
 
     /// Emits the current graph, in dot format, to stdout.
     void printGraph();
+
+    /// Locate nodes that are missing either in or out edges.
+    bool danglingNodes();
 
     /// Destructor.
     virtual ~AlnGraphBoost();

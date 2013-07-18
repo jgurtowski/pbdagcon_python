@@ -10,7 +10,7 @@ CXX_OPTS := -I $(BLASR_COMMON) -I $(LOG4CPP)/include -I $(BOOST) -std=c++0x -Wal
 SRCS := $(wildcard *.cpp)
 OBJS := $(SRCS:.cpp=.o)
 
-all : CXXFLAGS = -O2
+all : CXXFLAGS = -O3
 
 all: pbdagcon 
 

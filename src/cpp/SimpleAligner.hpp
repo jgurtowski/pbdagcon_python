@@ -7,7 +7,6 @@
 #include "datastructures/alignment/Alignment.hpp"
 #include "algorithms/alignment/AlignmentUtils.hpp"
 #include "algorithms/alignment/SDPAlign.hpp"
-#include "algorithms/alignment/DistanceMatrixScoreFunction.hpp"
 
 namespace Aligner {
 struct Config {

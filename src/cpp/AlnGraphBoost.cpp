@@ -9,6 +9,7 @@
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/graphviz.hpp>
+#include <boost/utility/value_init.hpp>
 #include "Alignment.hpp"
 #include "AlnGraphBoost.hpp"
 
@@ -342,7 +343,7 @@ const std::vector<AlnNode> AlnGraphBoost::bestPath() {
 
         bool bestEdgeFound = false;
         float bestScore = -FLT_MAX;
-        EdgeDesc bestEdgeD;
+        EdgeDesc bestEdgeD = boost::initialized_value; 
         OutEdgeIter oi, oe;
         for(tie(oi, oe) = boost::out_edges(n, _g); oi != oe; ++oi) {
             EdgeDesc outEdgeD = *oi;

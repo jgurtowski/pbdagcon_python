@@ -3,7 +3,7 @@ BOOST := $(THIRDPARTY)/boost/boost_1_47_0
 BOOST_THREAD_ARCH := $(BOOST)/stage/linux_gcc/lib/libboost_thread.a
 BOOST_OPTS_ARCH := $(BOOST)/stage/linux_gcc/lib/libboost_program_options.a
 LOG4CPP := $(THIRDPARTY)/log4cpp/log4cpp-1.0
-BLASR_COMMON := ../../../../../private/blasr/src
+BLASR_COMMON := ../../../../lib/cpp/alignment
 BLASR_ARCH := ../../../../lib/cpp/alignment/libblasr.a
 CXX_OPTS := -I $(BLASR_COMMON) -I $(LOG4CPP)/include -I $(BOOST) -std=c++0x -Wall -Wuninitialized -Wno-div-by-zero -fpermissive -pedantic -c -fmessage-length=0 -MMD -MP
 

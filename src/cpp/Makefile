@@ -14,7 +14,7 @@ all : CXXFLAGS = -O3
 
 all: pbdagcon 
 
-debug : CXXFLAGS = -g -O0 -fno-inline
+debug : CXXFLAGS = -g -fno-inline
 
 debug: pbdagcon
 

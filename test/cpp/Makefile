@@ -23,11 +23,11 @@ USER_DIR = ../../src/cpp
 CPPFLAGS += -I$(GTEST_DIR) -I$(GTEST_DIR)/include \
 			-I../../../../../ThirdParty/boost/boost_1_47_0 \
 			-I../../../../../assembly/cpp/common \
-            -I../../../../../private/blasr/src \
+            -I../../../../lib/cpp/alignment \
             -I../../../../../ThirdParty/log4cpp/log4cpp-1.0/include \
 			-I$(USER_DIR)
 
-BLASR_ARCH := ../../../../../private/blasr/src/libblasr.a
+BLASR_ARCH := ../../../../lib/cpp/alignment/libblasr.a
 LOG4CPP_ARCH := ../../../../../ThirdParty/log4cpp/log4cpp-1.0/src/.libs/liblog4cpp.a
 
 # Flags passed to the C++ compiler.

@@ -51,12 +51,14 @@ def main():
     # if we're chunked locate relevant alignments.  remove alignments from
     # the target that fall outside bestn
     if myM4 != allM4:
-        for m in map(M4Record._make, csv.reader(open(allM4), delimiter=' ')):
-            subreadId = m.qname[:m.qname.rfind('/')]
-            if subreadId in myQueries:
-                score = -int(m.score)
-                alen = int(m.tend) - int(m.tstart)
-                heapq.heappushpop(myQueries[subreadId].top, (score, alen, m))
+        with open(allM4) as m4files:
+            for m4 in m4files:
+                for m in map(M4Record._make, csv.reader(open(m4.rstrip()), delimiter=' ')):
+                    subreadId = m.qname[:m.qname.rfind('/')]
+                    if subreadId in myQueries:
+                        score = -int(m.score)
+                        alen = int(m.tend) - int(m.tstart)
+                        heapq.heappushpop(myQueries[subreadId].top, (score, alen, m))
 
         for tid, alnList in myTargets.iteritems():
             for m in alnList:

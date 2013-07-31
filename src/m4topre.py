@@ -79,7 +79,7 @@ def main():
             qname = m.qname[:m.qname.rfind('/')]
             qs = int(m.qstart)
             qe = int(m.qend)
-            qseq = seqs[qname][qs:qe + 1]
+            qseq = seqs[qname][qs:qe]
             strand = '-' if m.tstrand == '1' else '+'
             ts = int(m.tstart)
             te = int(m.tend)

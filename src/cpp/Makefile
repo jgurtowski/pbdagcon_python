@@ -28,7 +28,7 @@ $(LOG4CPP)/src/.libs/liblog4cpp.a:
 	$(MAKE) -C $(LOG4CPP)/src
 
 $(LOG4CPP)/include/log4cpp/config.h:
-	cd $(LOG4CPP) && ./configure
+	cd $(LOG4CPP) && (if [ -f Makefile ]; then $(MAKE) distclean; fi) && ./configure
 
 clean:
 	rm -f *.d

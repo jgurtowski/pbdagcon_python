@@ -103,6 +103,10 @@ public:
     ///        default = 0
     const std::string consensus(int minWeight=0);
 
+    /// Generates all consensus sequences from a target that meet the minimum
+    /// weight requirement.
+    void consensus(std::vector<std::string>& seqs, int minWeight=0, size_t minLength=500);
+
     /// Locates the optimal path through the graph.  Called by consensus()
     const std::vector<AlnNode> bestPath();
 

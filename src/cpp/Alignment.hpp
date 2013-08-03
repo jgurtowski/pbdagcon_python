@@ -64,6 +64,8 @@ void parsePre(std::istream& stream, dagcon::Alignment* aln);
 ///     target: CCGAC-T      target: CCGACT  
 dagcon::Alignment normalizeGaps(dagcon::Alignment& aln);
 
+void trimAln(dagcon::Alignment& aln, int trimLen=50);
+
 std::string revComp(std::string& seq); 
 
 #endif // __GCON_ALIGNMENT_HPP__

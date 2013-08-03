@@ -91,7 +91,7 @@ def main():
                 tseq = seqs[m.tname].translate(rc)[::-1][ts:te]
 
             print ' '.join([qname, m.tname, strand,
-                m.tseqlength, m.tstart, m.tend, qseq, tseq])
+                m.tseqlength, str(ts), str(te), qseq, tseq])
 
 if __name__ == '__main__':
     sys.exit(main())

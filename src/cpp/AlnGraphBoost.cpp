@@ -286,7 +286,7 @@ const std::string AlnGraphBoost::consensus(int minWeight) {
     // consensus sequence
     std::string cns;
 
-    // track the longest consensus path meeting mininum weight
+    // track the longest consensus path meeting minimum weight
     int offs = 0, bestOffs = 0, length = 0, idx = 0;
     bool metWeight = false;
     std::vector<AlnNode>::iterator curr = path.begin();
@@ -319,6 +319,47 @@ const std::string AlnGraphBoost::consensus(int minWeight) {
     }
     
     return cns.substr(bestOffs, length);
+}
+
+void AlnGraphBoost::consensus(std::vector<std::string>& seqs, int minWeight, size_t minLen) {
+    seqs.clear();
+
+    // get the best scoring path
+    std::vector<AlnNode> path = bestPath();
+
+    // consensus sequence
+    std::string cns;
+
+    // track the longest consensus path meeting minimum weight
+    int offs = 0, idx = 0;
+    size_t length = 0;
+    bool metWeight = false;
+    std::vector<AlnNode>::iterator curr = path.begin();
+    for (; curr != path.end(); ++curr) {
+        AlnNode n = *curr;
+        if (n.base == _g[_enterVtx].base || n.base == _g[_exitVtx].base) 
+            continue;
+        
+        cns += n.base;
+
+        // initial beginning of minimum weight section
+        if (!metWeight && n.weight >= minWeight) {
+            offs = idx;
+            metWeight = true;
+        } else if (metWeight && n.weight < minWeight) {
+        // concluded minimum weight section, add sequence to supplied vector
+            length = idx - offs;
+            metWeight = false;
+            if (length >= minLen) seqs.push_back(cns.substr(offs, length));
+        }
+        idx++;
+    }
+
+    // include end of sequence
+    if (metWeight && length >= minLen) {
+        length = idx - offs;
+        seqs.push_back(cns.substr(offs, length));
+    }
 }
 
 const std::vector<AlnNode> AlnGraphBoost::bestPath() {

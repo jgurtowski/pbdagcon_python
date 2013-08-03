@@ -49,6 +49,7 @@ void alnFileConsensus(AlnProvider* ap, const FilterOpts& fopts) {
     log4cpp::Category& logger = 
         log4cpp::Category::getInstance("afc");
     std::vector<dagcon::Alignment> alns;
+    std::vector<std::string> seqs;
     SimpleAligner aligner;
     bool hasNext = true;
     while (hasNext) {
@@ -61,6 +62,7 @@ void alnFileConsensus(AlnProvider* ap, const FilterOpts& fopts) {
         AlnGraphBoost ag(alns[0].len);
         for (auto it = alns.begin(); it != alns.end(); ++it) {
             dagcon::Alignment aln = normalizeGaps(*it);
+            trimAln(aln);
             boost::format msg("%s %s %s %d %d");
             msg % aln.sid;
             msg % aln.strand;
@@ -73,10 +75,14 @@ void alnFileConsensus(AlnProvider* ap, const FilterOpts& fopts) {
     
         ag.danglingNodes();
         ag.mergeNodes();
-        std::string cns = ag.consensus(fopts.minCov);
-        if (cns.length() < fopts.minLen) continue; 
-        std::cout << ">" << alns[0].id << std::endl;
-        std::cout << cns << std::endl;
+        ag.consensus(seqs, fopts.minCov);
+        int i = 0;
+        for (auto it = seqs.begin(); it != seqs.end(); ++it) {
+            std::string cns = *it;
+            if (cns.length() < fopts.minLen) continue; 
+            std::cout << ">" << alns[0].id << "/" << i++ << std::endl;
+            std::cout << cns << std::endl;
+        }
     }
 }
 
@@ -156,10 +162,9 @@ public:
     { }
 
     void operator()() {
-        log4cpp::Category& logger = 
-            log4cpp::Category::getInstance("Consensus");
         AlnVec alns;
         alnBuf_->pop(&alns);
+        std::vector<std::string> seqs;
 
         while (alns.size() > 0) {
             if (alns.size() < fopts.minCov) {
@@ -177,14 +182,13 @@ public:
             }
             ag.mergeNodes();
             std::ostringstream fasta;
-            std::string cns = ag.consensus(minWeight_);
-            if (cns.length() > minLen_) {
-                fasta << ">" << alns[0].id << std::endl;
+            ag.consensus(seqs, minWeight_, minLen_);
+            int i = 0;
+            for (auto it = seqs.begin(); it != seqs.end(); ++it) {
+                std::string cns = *it;
+                fasta << ">" << alns[0].id << "/" << i++ << std::endl;
                 fasta << cns << std::endl;
                 cnsBuf_->push(fasta.str()); 
-            } else {
-                logger.debug("Consensus length too short: %s, length: %d",
-                    alns[0].id.c_str(), cns.length());
             }
 
             alnBuf_->pop(&alns);

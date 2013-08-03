@@ -191,3 +191,13 @@ Alignment normalizeGaps(Alignment& aln) {
 
     return finalNorm;
 }
+
+void trimAln(Alignment& aln, int trimLen) {
+    for (int i = 0; i < trimLen; i++)
+        if (aln.tstr[i] != '-')
+            aln.start++;
+
+    int alnLen = aln.qstr.length();
+    aln.qstr = aln.qstr.substr(trimLen, alnLen-trimLen*2);
+    aln.tstr = aln.tstr.substr(trimLen, alnLen-trimLen*2);
+}

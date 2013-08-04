@@ -178,6 +178,7 @@ public:
             AlnGraphBoost ag(alns[0].len);
             for (auto it = alns.begin(); it != alns.end(); ++it) {
                 dagcon::Alignment aln = normalizeGaps(*it);
+                trimAln(aln);
                 ag.addAln(aln);
             }
             ag.mergeNodes();

@@ -193,11 +193,23 @@ Alignment normalizeGaps(Alignment& aln) {
 }
 
 void trimAln(Alignment& aln, int trimLen) {
-    for (int i = 0; i < trimLen; i++)
-        if (aln.tstr[i] != '-')
-            aln.start++;
+    int lbases = 0, loffs = 0;
+    while(lbases < trimLen) {
+        if (aln.tstr[loffs++] != '-') {
+            lbases++;
+        }
+    }
+    --loffs;
 
-    int alnLen = aln.qstr.length();
-    aln.qstr = aln.qstr.substr(trimLen, alnLen-trimLen*2);
-    aln.tstr = aln.tstr.substr(trimLen, alnLen-trimLen*2);
+    int rbases = 0, roffs = aln.tstr.length();
+    while (rbases < trimLen) {
+        if (aln.tstr[roffs--] != '-') {
+            rbases++;
+        }
+    }
+    ++roffs;
+
+    aln.start += lbases - 1;
+    aln.qstr = aln.qstr.substr(loffs, roffs - loffs);
+    aln.tstr = aln.tstr.substr(loffs, roffs - loffs);
 }

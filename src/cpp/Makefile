@@ -28,6 +28,13 @@ $(LOG4CPP)/src/.libs/liblog4cpp.a:
 	$(MAKE) -C $(LOG4CPP)/src
 
 $(LOG4CPP)/include/log4cpp/config.h:
+	# Touch these files to avoid using aclocal, autoconf and automake
+	# (perforce may mess up the timestamps so the files look out of date)
+	# The pregenerated versions of configure, Makefile.in and acinclude.m4
+	# should be fine.
+	touch $(LOG4CPP)/aclocal.m4;
+	touch $(LOG4CPP)/Makefile.in;
+	touch $(LOG4CPP)/configure;
 	cd $(LOG4CPP) && (if [ -f Makefile ]; then $(MAKE) distclean; fi) && ./configure
 
 clean:

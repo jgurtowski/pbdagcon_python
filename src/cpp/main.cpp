@@ -62,7 +62,6 @@ void alnFileConsensus(AlnProvider* ap, const FilterOpts& fopts) {
         AlnGraphBoost ag(alns[0].len);
         for (auto it = alns.begin(); it != alns.end(); ++it) {
             dagcon::Alignment aln = normalizeGaps(*it);
-            trimAln(aln);
             boost::format msg("%s %s %s %d %d");
             msg % aln.sid;
             msg % aln.strand;
@@ -75,14 +74,10 @@ void alnFileConsensus(AlnProvider* ap, const FilterOpts& fopts) {
     
         ag.danglingNodes();
         ag.mergeNodes();
-        ag.consensus(seqs, fopts.minCov);
-        int i = 0;
-        for (auto it = seqs.begin(); it != seqs.end(); ++it) {
-            std::string cns = *it;
-            if (cns.length() < fopts.minLen) continue; 
-            std::cout << ">" << alns[0].id << "/" << i++ << std::endl;
-            std::cout << cns << std::endl;
-        }
+        std::string cns = ag.consensus(fopts.minCov);
+        if (cns.length() < fopts.minLen) continue; 
+        std::cout << ">" << alns[0].id << std::endl;
+        std::cout << cns << std::endl;
     }
 }
 
@@ -182,11 +177,11 @@ public:
                 ag.addAln(aln);
             }
             ag.mergeNodes();
-            std::ostringstream fasta;
             ag.consensus(seqs, minWeight_, minLen_);
             int i = 0;
             for (auto it = seqs.begin(); it != seqs.end(); ++it) {
                 std::string cns = *it;
+                std::ostringstream fasta;
                 fasta << ">" << alns[0].id << "/" << i++ << std::endl;
                 fasta << cns << std::endl;
                 cnsBuf_->push(fasta.str()); 

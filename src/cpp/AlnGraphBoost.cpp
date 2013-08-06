@@ -356,9 +356,9 @@ void AlnGraphBoost::consensus(std::vector<std::string>& seqs, int minWeight, siz
     }
 
     // include end of sequence
-    if (metWeight && length >= minLen) {
+    if (metWeight) {
         length = idx - offs;
-        seqs.push_back(cns.substr(offs, length));
+        if (length >= minLen) seqs.push_back(cns.substr(offs, length));
     }
 }
 

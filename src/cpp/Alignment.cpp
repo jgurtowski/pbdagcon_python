@@ -199,7 +199,6 @@ void trimAln(Alignment& aln, int trimLen) {
             lbases++;
         }
     }
-    --loffs;
 
     int rbases = 0, roffs = aln.tstr.length();
     while (rbases < trimLen) {
@@ -207,9 +206,8 @@ void trimAln(Alignment& aln, int trimLen) {
             rbases++;
         }
     }
-    ++roffs;
 
-    aln.start += lbases - 1;
+    aln.start += lbases;
     aln.qstr = aln.qstr.substr(loffs, roffs - loffs);
     aln.tstr = aln.tstr.substr(loffs, roffs - loffs);
 }

@@ -77,7 +77,8 @@ def main():
 
     # generate pre-alignments
     for target, alignments in myTargets.iteritems():
-        for m in alignments:
+        # Output a limited set of alignments, sorted by score
+        for m in sorted(alignments, key=lambda x: int(x.score))[:76]:
             qname = m.qname[:m.qname.rfind('/')]
             qs = int(m.qstart)
             qe = int(m.qend)

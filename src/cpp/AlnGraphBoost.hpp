@@ -50,6 +50,14 @@ typedef boost::graph_traits<G>::out_edge_iterator OutEdgeIter;
 typedef boost::property_map<G, boost::vertex_index_t>::type IndexMap;
 
 /// 
+/// Simple consensus interface datastructure
+///
+struct CnsResult {
+    int range[2]; ///< Range on the target
+    std::string seq; ///< Consensus fragment
+};
+
+/// 
 /// Core alignments into consensus algorithm, implemented using the boost graph
 /// library.  Takes a set of alignments to a reference and builds a higher
 /// accuracy (~ 99.9) consensus sequence from it.  Designed for use in the HGAP
@@ -105,7 +113,7 @@ public:
 
     /// Generates all consensus sequences from a target that meet the minimum
     /// weight requirement.
-    void consensus(std::vector<std::string>& seqs, int minWeight=0, size_t minLength=500);
+    void consensus(std::vector<CnsResult>& seqs, int minWeight=0, size_t minLength=500);
 
     /// Locates the optimal path through the graph.  Called by consensus()
     const std::vector<AlnNode> bestPath();

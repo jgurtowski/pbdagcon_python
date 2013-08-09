@@ -116,11 +116,15 @@ public:
             while (hasNext) {
                 hasNext = ap->nextTarget(alns);
                 size_t cov = alns.size();
-                if (cov > 0 && cov < minCov_) {
+                if (cov == 0) continue;
+                if (cov < minCov_) {
                     logger.debug("Coverage requirement not met for %s, coverage: %d", 
                         alns[0].id.c_str(), alns.size());
                     continue;
                 }
+                boost::format msg("Consensus candidate: %s");
+                msg % alns[0].id;
+                logger.debugStream() << msg.str();
                 alnBuf_->push(alns);
             }
         } 
@@ -157,6 +161,8 @@ public:
     { }
 
     void operator()() {
+        log4cpp::Category& logger = 
+            log4cpp::Category::getInstance("Consensus");
         AlnVec alns;
         alnBuf_->pop(&alns);
         std::vector<CnsResult> seqs;
@@ -166,12 +172,16 @@ public:
                 alnBuf_->pop(&alns);
                 continue;
             }
+            boost::format msg("Consensus calling: %s");
+            msg % alns[0].id;
+            logger.debugStream() << msg.str();
 
             if (AlignFirst) 
                 for_each(alns.begin(), alns.end(), aligner); 
 
             AlnGraphBoost ag(alns[0].len);
             for (auto it = alns.begin(); it != alns.end(); ++it) {
+                if (it->qstr.length() < minLen_) continue;
                 dagcon::Alignment aln = normalizeGaps(*it);
                 trimAln(aln);
                 ag.addAln(aln);
@@ -236,7 +246,7 @@ bool parseOpts(int ac, char* av[], opts::variables_map& vm) {
         ("verbose,v", "Increase logging verbosity")
         ("align,a", "Align sequences before adding to consensus")
         ("min-length,m", opts::value<int>()->default_value(500), 
-            "Filter corrected reads less than length")
+            "Filter both alignments and corrected reads less than length")
         ("min-coverage,c", opts::value<int>()->default_value(8),
             "Minimum coverage required to correct")
         ("correct-query,q", "Correct the queries instead of targets. "

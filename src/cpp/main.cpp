@@ -159,7 +159,7 @@ public:
     void operator()() {
         AlnVec alns;
         alnBuf_->pop(&alns);
-        std::vector<std::string> seqs;
+        std::vector<CnsResult> seqs;
 
         while (alns.size() > 0) {
             if (alns.size() < fopts.minCov) {
@@ -178,12 +178,11 @@ public:
             }
             ag.mergeNodes();
             ag.consensus(seqs, minWeight_, minLen_);
-            int i = 0;
             for (auto it = seqs.begin(); it != seqs.end(); ++it) {
-                std::string cns = *it;
-                std::ostringstream fasta;
-                fasta << ">" << alns[0].id << "/" << i++ << std::endl;
-                fasta << cns << std::endl;
+                CnsResult result = *it;
+                boost::format fasta(">%s/%d_%d\n%s\n");
+                fasta % alns[0].id % result.range[0] % result.range[1];
+                fasta % result.seq;
                 cnsBuf_->push(fasta.str()); 
             }
 

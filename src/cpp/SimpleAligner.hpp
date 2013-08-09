@@ -7,6 +7,9 @@
 #include "datastructures/alignment/Alignment.hpp"
 #include "algorithms/alignment/AlignmentUtils.hpp"
 #include "algorithms/alignment/SDPAlign.hpp"
+#include "algorithms/alignment/GuidedAlign.hpp"
+#include "format/StickAlignmentPrinter.hpp"
+#include "FASTQSequence.hpp"
 
 namespace Aligner {
 struct Config {
@@ -17,6 +20,7 @@ struct Config {
     int sdpIns;
     int sdpDel;
     int kmer;
+    int bandSize;
 };
 }
 
@@ -28,7 +32,7 @@ public:
 private:
     Aligner::Config config_;
     TupleMetrics tupleMetrics_;
-    DistanceMatrixScoreFunction<DNASequence, DNASequence> distScoreFn_;
+    DistanceMatrixScoreFunction<DNASequence, FASTQSequence> distScoreFn_;
 };
 
 #endif // __GCON_SIMPLE_ALIGNER__

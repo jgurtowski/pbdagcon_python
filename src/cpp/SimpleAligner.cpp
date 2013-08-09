@@ -14,35 +14,45 @@ SimpleAligner::SimpleAligner() {
     config_.sdpIns = 5;
     config_.sdpDel = 10;
     config_.kmer = 11;
+    config_.bandSize = 10;
     tupleMetrics_.Initialize(config_.kmer);
     distScoreFn_.del = config_.indel;
-    distScoreFn_.ins = config_.indel;
+    distScoreFn_.ins = 4;
     distScoreFn_.InitializeScoreMatrix(SMRTDistanceMatrix);
 }
 
 void SimpleAligner::align(dagcon::Alignment& aln) {
     // This alignment type defined in blasr code base
-    blasr::Alignment blasrAln;
-    DNASequence query, target;
+    blasr::Alignment initialAln, refinedAln;
+    FASTQSequence query;
     query.seq = (Nucleotide*)aln.qstr.c_str();
     query.length = aln.qstr.length();
+    query.AllocateRichQualityValues(query.length);
+    query.qual.Allocate(query.length);
 
+    DNASequence target;
     target.seq = (Nucleotide*)aln.tstr.c_str();
     target.length = aln.tstr.length();
     SDPAlign(query, target, distScoreFn_, tupleMetrics_.tupleSize,
-             config_.sdpIndel, config_.sdpIndel, config_.indelRate,
-             blasrAln, Global);
+             config_.sdpIndel, config_.sdpIndel, config_.indelRate*2,
+             initialAln, Local);
+
+    GuidedAlign(query, target, initialAln, distScoreFn_, 
+        config_.bandSize, refinedAln);
+
+    //StickPrintAlignment(initialAln, query, target, std::cout);
+    //StickPrintAlignment(refinedAln, query, target, std::cout);
 
     std::string queryStr, alignStr, targetStr;
-    CreateAlignmentStrings(blasrAln, query.seq, target.seq, 
+    CreateAlignmentStrings(refinedAln, query.seq, target.seq, 
             targetStr, alignStr, queryStr, query.length, target.length);
 
     if (aln.strand == '-') {
-        aln.start = aln.len - (aln.end + blasrAln.tPos);
+        aln.start = aln.len - (aln.end + refinedAln.tPos);
         aln.qstr = revComp(queryStr);
         aln.tstr = revComp(targetStr);
     } else {
-        aln.start += blasrAln.tPos;
+        aln.start += refinedAln.tPos;
         aln.qstr = queryStr;
         aln.tstr = targetStr;
     }

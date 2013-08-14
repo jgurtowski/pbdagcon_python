@@ -45,8 +45,7 @@ def main():
     # load my m4 chunk
     for m in map(M4Record._make, csv.reader(open(myM4), delimiter=' ')):
         myTargets[m.tname].append(m)
-        subreadId = m.qname[:m.qname.rfind('/')]
-        myQueries[subreadId]
+        myQueries[m.qname]
 
     # if we're chunked locate relevant alignments.  remove alignments from
     # the target that fall outside bestn
@@ -54,18 +53,16 @@ def main():
         with open(allM4) as m4files:
             for m4 in m4files:
                 for m in map(M4Record._make, csv.reader(open(m4.rstrip()), delimiter=' ')):
-                    subreadId = m.qname[:m.qname.rfind('/')]
-                    if subreadId in myQueries:
+                    if m.qname in myQueries:
                         score = -int(m.score)
                         alen = int(m.tend) - int(m.tstart)
-                        heapq.heappushpop(myQueries[subreadId].top, (score, alen, m))
+                        heapq.heappushpop(myQueries[m.qname].top, (score, alen, m))
 
         for tid, alnList in myTargets.iteritems():
             for m in alnList:
-                subreadId = m.qname[:m.qname.rfind('/')]
                 score = -int(m.score)
                 alen = int(m.tend) - int(m.tstart)
-                if (score, alen, m) not in myQueries[subreadId].top:
+                if (score, alen, m) not in myQueries[m.qname].top:
                     alnList.remove(m)
 
     # load related sequences in all m4 files
@@ -79,10 +76,9 @@ def main():
     for target, alignments in myTargets.iteritems():
         # Output a limited set of alignments, sorted by score
         for m in sorted(alignments, key=lambda x: int(x.score))[:76]:
-            qname = m.qname[:m.qname.rfind('/')]
             qs = int(m.qstart)
             qe = int(m.qend)
-            qseq = seqs[qname][qs:qe]
+            qseq = seqs[m.qname][qs:qe]
             strand = '-' if m.tstrand == '1' else '+'
             ts = int(m.tstart)
             te = int(m.tend)
@@ -91,7 +87,7 @@ def main():
             else:
                 tseq = seqs[m.tname].translate(rc)[::-1][ts:te]
 
-            print ' '.join([qname, m.tname, strand,
+            print ' '.join([m.qname, m.tname, strand,
                 m.tseqlength, str(ts), str(te), qseq, tseq])
 
 if __name__ == '__main__':

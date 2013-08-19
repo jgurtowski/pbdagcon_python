@@ -6,6 +6,7 @@ import sys
 import csv
 import string
 import heapq
+from itertools import ifilter
 from collections import namedtuple, defaultdict
 from pbcore.io.FastaIO import FastaReader
 
@@ -14,7 +15,38 @@ M4Record = namedtuple('M4Record',
      ('qname tname score pctsimilarity qstrand qstart qend qseqlength '
      'tstrand tstart tend tseqlength mapqv'))
 
+# alias to avoid loop eval
+tuplfy = M4Record._make
+
+# dna compliment
 rc = string.maketrans('actgACTG', 'tgacTGAC')
+
+
+def sortTargScore(rec):
+    f = rec.split()
+    return (f[1], int(f[2]))
+
+
+def bestnTrue(rec, myq):
+    m = tuplfy(rec.split())
+    score = -int(m.score)
+    alen = int(m.tend) - int(m.tstart)
+    return (score, alen, rec) in myq[m.qname].top
+
+
+class AlnLimiter(object):
+    def __init__(self, limit=76):
+        self.count = 0
+        self.target = ''
+        self.limit = limit
+
+    def __call__(self, rec):
+        target = rec.split()[1]
+        if target != self.target:
+            self.count = 0
+            self.target = target
+        self.count += 1
+        return self.count < self.limit
 
 
 class TopAlignments(object):
@@ -27,8 +59,8 @@ class TopAlignments(object):
     def __call__(self):
         return  # noop
 
-    def remove(self, i):
-        self.top[i] = self.empty
+    def add(self, aln):
+        heapq.heappushpop(self.top, aln)
 
 
 def main():
@@ -39,56 +71,70 @@ def main():
 
     TopAlignments.bestn = bestn
 
-    myTargets = defaultdict(list)
+    # tracks bestn
     myQueries = defaultdict(TopAlignments)
 
+    myM4Recs = set()
+
     # load my m4 chunk
-    for m in map(M4Record._make, csv.reader(open(myM4), delimiter=' ')):
-        myTargets[m.tname].append(m)
-        myQueries[m.qname]
+    myM4Hndl = open(myM4)
+    recAdd = myM4Recs.add
+    for rec in myM4Hndl:
+        recAdd(rec)
+        m = tuplfy(rec.split())
+        score = -int(m.score)
+        alen = int(m.tend) - int(m.tstart)
+        myQueries[m.qname].add((score, alen, rec))
 
-    # if we're chunked locate relevant alignments.  remove alignments from
-    # the target that fall outside bestn
+    myM4Hndl.close()
+
+    # if we're chunked locate relevant alignments
     if myM4 != allM4:
-        with open(allM4) as m4files:
-            for m4 in m4files:
-                for m in map(M4Record._make, csv.reader(open(m4.rstrip()), delimiter=' ')):
-                    if m.qname in myQueries:
-                        score = -int(m.score)
-                        alen = int(m.tend) - int(m.tstart)
-                        heapq.heappushpop(myQueries[m.qname].top, (score, alen, m))
+        # assuming fofn here
+        m4files = [x.rstrip() for x in open(allM4) if x.rstrip() != myM4]
+        for m4 in m4files:
+            m4Hndl = open(m4)
+            for rec in m4Hndl:
+                m = tuplfy(rec.split())
+                if m.qname in myQueries:
+                    score = -int(m.score)
+                    alen = int(m.tend) - int(m.tstart)
+                    myQueries[m.qname].add((score, alen, rec))
+            m4Hndl.close()
 
-        for tid, alnList in myTargets.iteritems():
-            for m in alnList:
-                score = -int(m.score)
-                alen = int(m.tend) - int(m.tstart)
-                if (score, alen, m) not in myQueries[m.qname].top:
-                    alnList.remove(m)
+        # remove alignments that fall outside of bestn
+        myM4Recs = [x for x in myM4Recs if bestnTrue(x, myQueries)]
 
-    # load related sequences in all m4 files
+    # sort by target name/score
+    myM4Recs.sort(key=sortTargScore)
+
+    # take a max number of alignments for each target
+    limiter = AlnLimiter()
+    myM4Recs = [x for x in ifilter(limiter, myM4Recs)]
+
+    # load only related sequences
     seqs = {}
     f = FastaReader(reads)
     for e in f:
-        if e.name in myTargets or e.name in myQueries:
+        if e.name in myQueries:
             seqs[e.name] = e.sequence
 
     # generate pre-alignments
-    for target, alignments in myTargets.iteritems():
-        # Output a limited set of alignments, sorted by score
-        for m in sorted(alignments, key=lambda x: int(x.score))[:76]:
-            qs = int(m.qstart)
-            qe = int(m.qend)
-            qseq = seqs[m.qname][qs:qe]
-            strand = '-' if m.tstrand == '1' else '+'
-            ts = int(m.tstart)
-            te = int(m.tend)
-            if strand == '+':
-                tseq = seqs[m.tname][ts:te]
-            else:
-                tseq = seqs[m.tname].translate(rc)[::-1][ts:te]
+    for rec in myM4Recs:
+        m = tuplfy(rec.split())
+        qs = int(m.qstart)
+        qe = int(m.qend)
+        qseq = seqs[m.qname][qs:qe]
+        strand = '-' if m.tstrand == '1' else '+'
+        ts = int(m.tstart)
+        te = int(m.tend)
+        if strand == '+':
+            tseq = seqs[m.tname][ts:te]
+        else:
+            tseq = seqs[m.tname].translate(rc)[::-1][ts:te]
 
-            print ' '.join([m.qname, m.tname, strand,
-                m.tseqlength, str(ts), str(te), qseq, tseq])
+        print ' '.join([m.qname, m.tname, strand,
+            m.tseqlength, str(ts), str(te), qseq, tseq])
 
 if __name__ == '__main__':
     sys.exit(main())

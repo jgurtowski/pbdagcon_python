@@ -11,8 +11,9 @@ from collections import namedtuple, defaultdict
 from pbcore.io.FastaIO import FastaReader
 
 
-M4Record = namedtuple('M4Record',
-     ('qname tname score pctsimilarity qstrand qstart qend qseqlength '
+M4Record = namedtuple(
+    'M4Record',
+    ('qname tname score pctsimilarity qstrand qstart qend qseqlength '
      'tstrand tstart tend tseqlength mapqv'))
 
 # alias to avoid loop eval
@@ -104,6 +105,8 @@ def main():
 
         # remove alignments that fall outside of bestn
         myM4Recs = [x for x in myM4Recs if bestnTrue(x, myQueries)]
+    else:
+        myM4Recs = list(myM4Recs)
 
     # sort by target name/score
     myM4Recs.sort(key=sortTargScore)
@@ -134,7 +137,7 @@ def main():
             tseq = seqs[m.tname].translate(rc)[::-1][ts:te]
 
         print ' '.join([m.qname, m.tname, strand,
-            m.tseqlength, str(ts), str(te), qseq, tseq])
+                       m.tseqlength, str(ts), str(te), qseq, tseq])
 
 if __name__ == '__main__':
     sys.exit(main())

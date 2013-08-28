@@ -4,13 +4,20 @@
 # smrtpipe so I can communicate pipe errors to the task.  We're overcoming
 # the limitation of smrtpipe forcing tasks to run serially, enabling a new
 # level of pipelining that's extremely efficient in an imperfect world ...
+# However, direct file I/O is faster by default.
 
-# generate pre-alignments
-m4topre.py $mym4 $allm4 $subreads ${bestn-24} | \
+tmp=${tmp-"/tmp"}
+
+trap "rm -f $tmp/aln.$$.pre" EXIT SIGINT
+
+# generate pre-alignments to a tmp directory
+m4topre.py $mym4 $allm4 $subreads ${bestn-24} > $tmp/aln.$$.pre
+
 # pipe it to consensus and generate fasta
-pbdagcon -a -j ${nproc-15} | tee ${fasta-"corrected.fa"} | \
+pbdagcon -a -j ${nproc-15} $tmp/aln.$$.pre | tee ${fasta-"corrected.fa"} | \
 # generate a fastq
 awk '{if($0~/>/){sub(/>/,"@",$0);print;}else{l=length($0);q="";while(l--){q=q "9"}printf("%s\n+\n%s\n",$0,q)}}' > ${fastq-"corrected.fq"}
+
 
 # check the status of each piped command and exit non-zero if found
 for exitval in ${PIPESTATUS[*]}
@@ -20,5 +27,6 @@ do
         exit $exitval
     fi
 done
+
 
 exit 0;

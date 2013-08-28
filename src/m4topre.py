@@ -10,17 +10,28 @@ from itertools import ifilter
 from collections import namedtuple, defaultdict
 from pbcore.io.FastaIO import FastaReader
 
-
+# qname tname score pctsimilarity qstrand qstart qend qseqlength tstrand tstart
+# ... tend tseqlength mapqv
+#
+# store only fields we need
+m4fields = [0, 1, 2, 5, 6, 8, 9, 10, 11]
 M4Record = namedtuple(
-    'M4Record',
-    ('qname tname score pctsimilarity qstrand qstart qend qseqlength '
-     'tstrand tstart tend tseqlength mapqv'))
+    'M4Record', 'qname tname score qstart qend tstrand tstart tend tseqlength')
 
-# alias to avoid loop eval
 tuplfy = M4Record._make
 
 # dna compliment
 rc = string.maketrans('actgACTG', 'tgacTGAC')
+
+
+def parseM4(rec):
+    return [y for (x, y) in enumerate(rec.split()) if x in m4fields]
+
+
+def rating(m):
+    score = -int(m.score)
+    alen = int(m.tend) - int(m.tstart)
+    return score+alen
 
 
 def sortTargScore(rec):
@@ -30,9 +41,8 @@ def sortTargScore(rec):
 
 def bestnTrue(rec, myq):
     m = tuplfy(rec.split())
-    score = -int(m.score)
-    alen = int(m.tend) - int(m.tstart)
-    return (score, alen, rec) in myq[m.qname].top
+    r = rating(m)
+    return r in myq[m.qname[32:]].top
 
 
 class AlnLimiter(object):
@@ -54,8 +64,7 @@ class TopAlignments(object):
     bestn = 10
 
     def __init__(self):
-        self.empty = (0, 0, None)
-        self.top = [self.empty for x in xrange(0, TopAlignments.bestn)]
+        self.top = [0] * TopAlignments.bestn
 
     def __call__(self):
         return  # noop
@@ -68,9 +77,7 @@ def main():
     myM4 = sys.argv[1]
     allM4 = sys.argv[2]
     reads = sys.argv[3]
-    bestn = int(sys.argv[4])
-
-    TopAlignments.bestn = bestn
+    TopAlignments.bestn = int(sys.argv[4])
 
     # tracks bestn
     myQueries = defaultdict(TopAlignments)
@@ -81,11 +88,11 @@ def main():
     myM4Hndl = open(myM4)
     recAdd = myM4Recs.add
     for rec in myM4Hndl:
-        recAdd(rec)
-        m = tuplfy(rec.split())
-        score = -int(m.score)
-        alen = int(m.tend) - int(m.tstart)
-        myQueries[m.qname].add((score, alen, rec))
+        p = parseM4(rec)
+        m = tuplfy(p)
+        r = rating(m)
+        myQueries[m.qname[32:]].add(r)
+        recAdd(' '.join(p))
 
     myM4Hndl.close()
 
@@ -96,11 +103,10 @@ def main():
         for m4 in m4files:
             m4Hndl = open(m4)
             for rec in m4Hndl:
-                m = tuplfy(rec.split())
-                if m.qname in myQueries:
-                    score = -int(m.score)
-                    alen = int(m.tend) - int(m.tstart)
-                    myQueries[m.qname].add((score, alen, rec))
+                m = tuplfy(parseM4(rec))
+                if m.qname[32:] in myQueries:
+                    r = rating(m)
+                    myQueries[m.qname[32:]].add(r)
             m4Hndl.close()
 
         # remove alignments that fall outside of bestn
@@ -119,8 +125,11 @@ def main():
     seqs = {}
     f = FastaReader(reads)
     for e in f:
-        if e.name in myQueries:
+        if e.name[32:] in myQueries:
             seqs[e.name] = e.sequence
+
+    # may or may not help
+    del myQueries
 
     # generate pre-alignments
     for rec in myM4Recs:

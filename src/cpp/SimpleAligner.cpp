@@ -27,8 +27,6 @@ void SimpleAligner::align(dagcon::Alignment& aln) {
     FASTQSequence query;
     query.seq = (Nucleotide*)aln.qstr.c_str();
     query.length = aln.qstr.length();
-    query.AllocateRichQualityValues(query.length);
-    query.qual.Allocate(query.length);
 
     DNASequence target;
     target.seq = (Nucleotide*)aln.tstr.c_str();

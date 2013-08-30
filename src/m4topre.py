@@ -34,9 +34,15 @@ def rating(m):
     return score+alen
 
 
-def sortTargScore(rec):
+def schwartzian(rec):
     f = rec.split()
-    return (f[1], int(f[2]))
+    return (f[1], int(f[2]), rec)
+
+
+def sortTargScore(recs):
+    recs[:] = [schwartzian(x) for x in recs]
+    recs.sort()
+    recs[:] = [rec for (target, score, rec) in recs]
 
 
 def bestnTrue(rec, myq):
@@ -81,12 +87,11 @@ def main():
 
     # tracks bestn
     myQueries = defaultdict(TopAlignments)
-
-    myM4Recs = set()
+    myM4Recs = []
 
     # load my m4 chunk
     myM4Hndl = open(myM4)
-    recAdd = myM4Recs.add
+    recAdd = myM4Recs.append
     for rec in myM4Hndl:
         p = parseM4(rec)
         m = tuplfy(p)
@@ -110,16 +115,14 @@ def main():
             m4Hndl.close()
 
         # remove alignments that fall outside of bestn
-        myM4Recs = [x for x in myM4Recs if bestnTrue(x, myQueries)]
-    else:
-        myM4Recs = list(myM4Recs)
+        myM4Recs[:] = [x for x in myM4Recs if bestnTrue(x, myQueries)]
 
     # sort by target name/score
-    myM4Recs.sort(key=sortTargScore)
+    sortTargScore(myM4Recs)
 
     # take a max number of alignments for each target
     limiter = AlnLimiter()
-    myM4Recs = [x for x in ifilter(limiter, myM4Recs)]
+    myM4Recs[:] = [x for x in ifilter(limiter, myM4Recs)]
 
     # load only related sequences
     seqs = {}

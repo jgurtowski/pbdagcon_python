@@ -10,11 +10,12 @@ TEST(SimpleAligner, align) {
     dagcon::Alignment a;
     a.id = "test";
     a.start = 765;
-    a.end = 1897;
+    a.end = 826;
     a.tlen = 2092;
     a.strand = '-';
     a.tstr = "ACAGAGATGCAAGGTAAAGTACAATTGAAAAACTAACCTCTTCCAGCGAGACTTATAGCGA";
     a.qstr = "ACAGAAGATGAAGGTAAATACAATGAAAAAACTACCTCGGTTCCAGCGAGAACTATAGCGA";
     sa.align(a);
     EXPECT_EQ("TCGCTATAAGT-CTCGCTGGAA--GAGGTTAGTTTTT-CAATTGTACTTTACCTTGCATCT-CTGT", a.tstr);
+    EXPECT_EQ(1267, a.start);
 }

@@ -34,7 +34,7 @@ TEST(AlnGraphBoostTest, RawConsensus) {
     for(int i=0; i < 5; i++) {
         dagcon::Alignment& ra = algs[i];
         ra.id = "target";
-        ra.len = 9;
+        ra.tlen = 9;
         ra.start = 1;
     }
     ag.addAln(algs[0]);

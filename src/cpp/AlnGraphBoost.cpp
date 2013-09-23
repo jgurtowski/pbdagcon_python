@@ -53,6 +53,7 @@ AlnGraphBoost::AlnGraphBoost(const size_t blen) {
         _g[v].backbone = true;
         _g[v].weight = 1;
         _g[v].deleted = false;
+        _g[v].base = 'N';
         _bbMap[v] = v;
     }
     _exitVtx = *curr;
@@ -178,7 +179,7 @@ void AlnGraphBoost::mergeInNodes(VtxDesc n) {
         OutEdgeIter anoi, anoe;
         tie(anoi, anoe) = boost::out_edges(an, _g);
         
-        // Accumulate outer edge information
+        // Accumulate out edge information
         for (; ni != nodes.cend(); ++ni) {
             OutEdgeIter oi, oe;
             tie(oi, oe) = boost::out_edges(*ni, _g);
@@ -186,7 +187,7 @@ void AlnGraphBoost::mergeInNodes(VtxDesc n) {
             _g[an].weight += _g[*ni].weight;
         }
 
-        // Accumulate inner edge information, merges nodes
+        // Accumulate in edge information, merges nodes
         ni = nodes.cbegin();
         ++ni;
         for (; ni != nodes.cend(); ++ni) {
@@ -388,7 +389,7 @@ const std::vector<AlnNode> AlnGraphBoost::bestPath() {
 
         VtxDesc n = seedNodes.front();
         seedNodes.pop();
-
+        
         bool bestEdgeFound = false;
         float bestScore = -FLT_MAX;
         EdgeDesc bestEdgeD = boost::initialized_value; 

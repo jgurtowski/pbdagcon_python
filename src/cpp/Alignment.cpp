@@ -31,7 +31,7 @@ std::string revComp(std::string& seq) {
 bool Alignment::groupByTarget = true;
 
 Alignment::Alignment() : 
-    len(0), 
+    tlen(0), 
     start(0), 
     end(0), 
     id(""), 
@@ -62,7 +62,7 @@ void parseM5(std::istream& stream, Alignment* aln) {
     aln->id = Alignment::groupByTarget ? fields[5] : baseQid; 
 
     std::istringstream ssLen(Alignment::groupByTarget ? fields[6] : fields[1]);
-    ssLen >> aln->len;
+    ssLen >> aln->tlen;
     std::istringstream ssStart(Alignment::groupByTarget ? fields[7] : fields[2]);
     ssStart >> aln->start;
     aln->start++;
@@ -99,7 +99,7 @@ void parsePre(std::istream& stream, Alignment* aln) {
     aln->strand = fields[2][0];
 
     std::istringstream ssLen(fields[3]);
-    ssLen >> aln->len;
+    ssLen >> aln->tlen;
 
     std::istringstream ssStart(fields[4]);
     ssStart >> aln->start;
@@ -180,7 +180,7 @@ Alignment normalizeGaps(Alignment& aln) {
     finalNorm.id = aln.id;
     finalNorm.sid = aln.sid;
     finalNorm.start = aln.start;
-    finalNorm.len = aln.len;
+    finalNorm.tlen = aln.tlen;
     finalNorm.strand = aln.strand;
     for (size_t i=0; i < qlen; i++) {
         if (qNorm[i] != '-' || tNorm[i] != '-') {

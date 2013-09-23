@@ -38,12 +38,14 @@ struct FilterOpts {
     size_t minCov;
     /// Minimum consensus length to output
     size_t minLen;
+    /// Amount to trim alignments by on either side.
+    int trim;
 } fopts;
 
 bool AlignFirst = false;
 
 ///
-/// Single-threaded consensus execution.
+/// Single-threaded consensus execution. Typically used for debugging.
 ///
 void alnFileConsensus(AlnProvider* ap, const FilterOpts& fopts) {
     log4cpp::Category& logger = 
@@ -59,7 +61,7 @@ void alnFileConsensus(AlnProvider* ap, const FilterOpts& fopts) {
         if (AlignFirst) 
             for_each(alns.begin(), alns.end(), aligner); 
 
-        AlnGraphBoost ag(alns[0].len);
+        AlnGraphBoost ag(alns[0].tlen);
         for (auto it = alns.begin(); it != alns.end(); ++it) {
             dagcon::Alignment aln = normalizeGaps(*it);
             boost::format msg("%s %s %s %d %d");
@@ -74,10 +76,11 @@ void alnFileConsensus(AlnProvider* ap, const FilterOpts& fopts) {
     
         ag.danglingNodes();
         ag.mergeNodes();
-        std::string cns = ag.consensus(fopts.minCov);
-        if (cns.length() < fopts.minLen) continue; 
-        std::cout << ">" << alns[0].id << std::endl;
-        std::cout << cns << std::endl;
+        ag.printGraph();
+        //std::string cns = ag.consensus(fopts.minCov);
+        //if (cns.length() < fopts.minLen) continue; 
+        //std::cout << ">" << alns[0].id << std::endl;
+        //std::cout << cns << std::endl;
     }
 }
 
@@ -153,11 +156,11 @@ class Consensus {
     int minWeight_;
     SimpleAligner aligner;
 public:
-    Consensus(AlnBuf* ab, CnsBuf* cb, size_t minLen) : 
+    Consensus(AlnBuf* ab, CnsBuf* cb, size_t minLen, int minWeight) : 
         alnBuf_(ab), 
         cnsBuf_(cb),
         minLen_(minLen),
-        minWeight_(8)
+        minWeight_(minWeight)
     { }
 
     void operator()() {
@@ -172,18 +175,19 @@ public:
                 alnBuf_->pop(&alns);
                 continue;
             }
-            boost::format msg("Consensus calling: %s");
+            boost::format msg("Consensus calling: %s Alignments: %d");
             msg % alns[0].id;
+            msg % alns.size();
             logger.debugStream() << msg.str();
 
             if (AlignFirst) 
                 for_each(alns.begin(), alns.end(), aligner); 
 
-            AlnGraphBoost ag(alns[0].len);
+            AlnGraphBoost ag(alns[0].tlen);
             for (auto it = alns.begin(); it != alns.end(); ++it) {
                 if (it->qstr.length() < minLen_) continue;
                 dagcon::Alignment aln = normalizeGaps(*it);
-                trimAln(aln);
+                trimAln(aln, fopts.trim);
                 ag.addAln(aln);
             }
             ag.mergeNodes();
@@ -245,6 +249,8 @@ bool parseOpts(int ac, char* av[], opts::variables_map& vm) {
         ("help,h", "Display this help")
         ("verbose,v", "Increase logging verbosity")
         ("align,a", "Align sequences before adding to consensus")
+        ("trim,t", opts::value<int>()->default_value(50),
+            "Trim alignment by N bases on either side")
         ("min-length,m", opts::value<int>()->default_value(500), 
             "Filter both alignments and corrected reads less than length")
         ("min-coverage,c", opts::value<int>()->default_value(8),
@@ -298,6 +304,7 @@ int main(int argc, char* argv[]) {
 
     fopts.minCov = vm["min-coverage"].as<int>();
     fopts.minLen = vm["min-length"].as<int>();
+    fopts.trim = vm["trim"].as<int>();
 
     std::string input = vm["input"].as<std::string>(); 
     if (vm.count("threads")) {
@@ -314,7 +321,7 @@ int main(int argc, char* argv[]) {
 
         std::vector<boost::thread> cnsThreads;
         for (int i=0; i < nthreads; i++) {
-            Consensus c(&alnBuf, &cnsBuf, fopts.minLen);
+            Consensus c(&alnBuf, &cnsBuf, fopts.minLen, fopts.minCov);
             cnsThreads.push_back(boost::thread(c));
         }
 

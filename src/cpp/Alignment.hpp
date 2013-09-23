@@ -16,9 +16,9 @@ public:
     static bool groupByTarget;
 
     // length of the sequence we are trying to correct
-    uint32_t len;
+    uint32_t tlen;
     
-    // comforming offsets are 1-based
+    // conforming offsets are 1-based
     uint32_t start;
 
     uint32_t end;

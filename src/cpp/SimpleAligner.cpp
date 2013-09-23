@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <cstring>
 #include <string>
+#include <cassert>
 #include <algorithm>
 #include "Alignment.hpp"
 #include "SimpleAligner.hpp"
@@ -38,23 +39,26 @@ void SimpleAligner::align(dagcon::Alignment& aln) {
     GuidedAlign(query, target, initialAln, distScoreFn_, 
         config_.bandSize, refinedAln);
 
+    std::string queryStr, alignStr, targetStr;
+
     //StickPrintAlignment(initialAln, query, target, std::cout);
     //StickPrintAlignment(refinedAln, query, target, std::cout);
 
-    std::string queryStr, alignStr, targetStr;
     CreateAlignmentStrings(refinedAln, query.seq, target.seq, 
             targetStr, alignStr, queryStr, query.length, target.length);
 
+    // alignment coordinates may change, update alignment object
+    aln.start += refinedAln.GenomicTBegin();
+    aln.end = aln.start + refinedAln.GenomicTEnd();
+
     if (aln.strand == '-') {
-        aln.start = aln.len - (aln.end + refinedAln.tPos);
+        aln.start = aln.tlen - aln.end;
         aln.qstr = revComp(queryStr);
         aln.tstr = revComp(targetStr);
     } else {
-        aln.start += refinedAln.tPos;
         aln.qstr = queryStr;
         aln.tstr = targetStr;
     }
-    aln.start++;
 }
 
 void SimpleAligner::operator() (dagcon::Alignment& aln) {

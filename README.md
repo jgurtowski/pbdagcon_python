@@ -32,8 +32,6 @@ the PacBio data and make interesting science project possible and more
 feasible.  It is not an official software release from the PacBio(TM) software
 developing organization.
 
-
-
 -----------------------------------------------------------------------------
 
 <script>

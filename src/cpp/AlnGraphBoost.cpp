@@ -51,7 +51,7 @@ AlnGraphBoost::AlnGraphBoost(const size_t blen) {
     for (size_t i = 0; i < blen; i++, ++curr) {
         VtxDesc v = *curr;
         _g[v].backbone = true;
-        _g[v].weight = 1;
+        _g[v].weight = 0;
         _g[v].deleted = false;
         _g[v].base = 'N';
         _bbMap[v] = v;

@@ -1,7 +1,6 @@
 #ifndef __GCON_SIMPLE_ALIGNER__
 #define __GCON_SIMPLE_ALIGNER__
 #include "Types.h"
-#include "PlatformId.h"
 #include "Enumerations.h"
 #include "DNASequence.hpp"
 #include "datastructures/alignment/Alignment.hpp"

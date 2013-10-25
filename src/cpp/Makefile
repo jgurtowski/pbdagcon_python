@@ -16,7 +16,7 @@ debug: OPTIMIZE = -g -fno-inline
 debug: pbdagcon
 
 pbdagcon: $(OBJS)
-	$(CXX) $(LIBDIRS) -o $@ $^ $(LIBS)
+	$(CXX) $(LIBDIRS) -static -o $@ $^ $(LIBS)
 
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) $(OPTIMIZE) $(INCDIRS) -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"

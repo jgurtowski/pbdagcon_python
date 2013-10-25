@@ -32,6 +32,51 @@ the PacBio data and make interesting science project possible and more
 feasible.  It is not an official software release from the PacBio(TM) software
 developing organization.
 
+Code Organization
+=================
+Currently a WIP, the code is transitioning from python to C++ so things will  
+move around a bit.  The new C++ code has been placed in *cpp/* subdirectories.  
+
+Building
+========
+The following are instructions on how to build the C++ pbdagcon executable.
+
+Pre-requisites
+--------------
+* [pblibblasr](https://github.com/PacificBiosciences/pblibblasr) BLASR library
+* [boost](http://www.boost.org/) Popular C++ utility library (1.46 or 1.47) 
+* [log4cpp](http://log4cpp.sourceforge.net/) Logging library (1.0 or 1.1)
+* [gtest](http://code.google.com/p/googletest/) Google's C++ unit test Library (to build tests, at least 1.3.0)
+
+Compile/Check
+-------------
+    > export BLASR=<path to pblibblasr>
+    > export GTEST=<path to gtest>
+
+    # build pbdagcon executable
+    > make cpp 
+    > cd src/cpp
+    > ./pbdagcon --help
+
+    # build and run unit tests
+    > make cpp-check
+
+Running
+=======
+Describes running workflows related to the C++ version only.
+
+Inputs/Outputs
+--------------
+At the most basic level, pbdagcon takes information from BLASR alignments   
+sorted by target and generates fasta-formatted corrected target sequences.
+The alignments from BLASR can be formatted with either *-m 4* or *-m 5*.  For  
+*-m 4* format, the alignments must be run through a format adapter,   
+*src/m4topre.py*, in order to generate suitable input to *pbdagcon*.
+
+See *src/cpp/pbdagcon_wf.sh* for an example way to use pbdagcon in a workflow  
+scenario using BLASR *-m 4* output (must be sorted by target).
+
+
 -----------------------------------------------------------------------------
 
 <script>

@@ -5,7 +5,7 @@ SRCDIR := ../../src/cpp
 include $(SRCDIR)/pbi.mk
 
 # Flags passed to the preprocessor.
-CPPFLAGS += $(INCDIRS) -I$(SRCDIR) -I$(GTEST)
+CPPFLAGS += $(INCDIRS) -I$(SRCDIR) -I$(GTEST)/include
 
 # Flags passed to the C++ compiler.
 CXXFLAGS += -g -std=c++0x -fpermissive
@@ -38,7 +38,7 @@ clean :
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c "$<" -o "$@"
 
 test_% : $(OBJS) gtest_main.a
-	$(CXX) $(LIBDIRS) $^ -o $@ $(LIBS)
+	$(CXX) $(LIBDIRS) -static $^ -o $@ $(LIBS)
 
 # The rest is building gtest
 GTEST_SRCS_ = $(GTEST)/src/*.cc $(GTEST)/src/*.h 

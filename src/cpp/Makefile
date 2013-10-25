@@ -5,6 +5,7 @@ CXXFLAGS := -std=c++0x -Wall -Wuninitialized -Wno-div-by-zero -fpermissive \
 
 SRCS := $(wildcard *.cpp)
 OBJS := $(SRCS:.cpp=.o)
+LIBS := -lblasr -llog4cpp -lboost_thread -lboost_program_options -lpthread 
 
 all: OPTIMIZE = -O3
 
@@ -15,7 +16,7 @@ debug: OPTIMIZE = -g -fno-inline
 debug: pbdagcon
 
 pbdagcon: $(OBJS)
-	$(CXX) $(LIBDIRS) -o $@ $^ -lblasr -llog4cpp -lboost_thread -lboost_program_options -lpthread 
+	$(CXX) $(LIBDIRS) -o $@ $^ $(LIBS)
 
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) $(OPTIMIZE) $(INCDIRS) -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"

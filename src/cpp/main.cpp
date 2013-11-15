@@ -8,7 +8,7 @@
 #include <algorithm>
 #include <log4cpp/Category.hh>
 #include <log4cpp/Appender.hh>
-#include <log4cpp/FileAppender.hh>
+#include <log4cpp/OstreamAppender.hh>
 #include <log4cpp/Layout.hh>
 #include <log4cpp/PatternLayout.hh>
 #include <log4cpp/Priority.hh>
@@ -233,7 +233,7 @@ public:
 
 void setupLogger(log4cpp::Priority::Value priority) {
     // Setup the root logger to a file
-    log4cpp::Appender *fapp = new log4cpp::FileAppender("default", "pbdagcon.log", false);
+    log4cpp::Appender *fapp = new log4cpp::OstreamAppender("default", &std::cerr);
     log4cpp::PatternLayout *layout = new log4cpp::PatternLayout();
     layout->setConversionPattern("%d %p [%c] %m%n");
     fapp->setLayout(layout); 

@@ -71,9 +71,9 @@ The most basic use case where one can generate a consensus from a set of
 alignments using the pbdagcon executable directly.
 
 At the most basic level, pbdagcon takes information from BLASR alignments   
-sorted by target and generates fasta-formatted corrected target sequences.
-The alignments from BLASR can be formatted with either *-m 4* or *-m 5*.  For  
-*-m 4* format, the alignments must be run through a format adapter,   
+sorted by target and generates fasta-formatted corrected target sequences.  
+The alignments from BLASR can be formatted with either *-m 4* or *-m 5*.   
+For *-m 4* format, the alignments must be run through a format adapter,   
 *src/m4topre.py*, in order to generate suitable input to *pbdagcon*.
 
 See *src/cpp/pbdagcon_wf.sh* for an example way to use pbdagcon in a workflow  

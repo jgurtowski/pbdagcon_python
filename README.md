@@ -83,7 +83,7 @@ The following example shows the simplest way to generate a consensus for one
 target using BLASR *-m 5* alignments as input.
 
     > blasr queries.fasta target.fasta -bestn 1 -m 5 -out mapped.m5
-    > pbdagcon -j 2 mapped.m5 > consensus.fasta
+    > pbdagcon mapped.m5 > consensus.fasta
 
 ### Use Case: HGAP correction of PacBio reads
 Walks through how one could use pbdagcon to correct PacBio reads.  This  
@@ -98,8 +98,9 @@ This example makes use of the *src/filterm4.py* and *src/m4topre.py* scripts.
     # Next run the m4 adapter script, generating 'pre-alignments'
     > m4topre.py mapped.m4.filt mapped.m4.filt reads.fasta 24 > mapped.pre
 
-    # Finally, correct using pbdagcon
-    > pbdagcon -j 2 -a mapped.pre > corrected.fasta
+    # Finally, correct using pbdagcon, typically using multiple consensus  
+    # threads.
+    > pbdagcon -j 4 -a mapped.pre > corrected.fasta
 
 -----------------------------------------------------------------------------
 

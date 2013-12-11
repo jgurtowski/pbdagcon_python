@@ -44,46 +44,6 @@ struct FilterOpts {
 
 bool AlignFirst = false;
 
-///
-/// Single-threaded consensus execution. Typically used for debugging.
-///
-void alnFileConsensus(AlnProvider* ap, const FilterOpts& fopts) {
-    log4cpp::Category& logger = 
-        log4cpp::Category::getInstance("afc");
-    std::vector<dagcon::Alignment> alns;
-    std::vector<std::string> seqs;
-    SimpleAligner aligner;
-    bool hasNext = true;
-    while (hasNext) {
-        hasNext = ap->nextTarget(alns);
-        if (alns.size() < fopts.minCov) continue;
-
-        if (AlignFirst) 
-            for_each(alns.begin(), alns.end(), aligner); 
-
-        AlnGraphBoost ag(alns[0].tlen);
-        for (auto it = alns.begin(); it != alns.end(); ++it) {
-            dagcon::Alignment aln = normalizeGaps(*it);
-            boost::format msg("%s %s %s %d %d");
-            msg % aln.sid;
-            msg % aln.strand;
-            msg % aln.qstr.substr(aln.qstr.length()-50, 50);
-            msg % aln.start;
-            msg % aln.qstr.length();
-            logger.debugStream() << msg.str();
-            ag.addAln(aln);
-        }
-    
-        ag.danglingNodes();
-        ag.mergeNodes();
-        ag.printGraph();
-        //std::string cns = ag.consensus(fopts.minCov);
-        //if (cns.length() < fopts.minLen) continue; 
-        //std::cout << ">" << alns[0].id << std::endl;
-        //std::cout << cns << std::endl;
-    }
-}
-
 typedef std::vector<dagcon::Alignment> AlnVec;
 typedef BoundedBuffer<AlnVec> AlnBuf;
 typedef BoundedBuffer<std::string> CnsBuf;
@@ -255,9 +215,6 @@ bool parseOpts(int ac, char* av[], opts::variables_map& vm) {
             "Filter both alignments and corrected reads less than length")
         ("min-coverage,c", opts::value<int>()->default_value(8),
             "Minimum coverage required to correct")
-        ("correct-query,q", "Correct the queries instead of targets. "
-            "If not set, and the input is a file, the code will correct the side "
-            "that is grouped.")
         ("threads,j", opts::value<int>(), "Number of consensus threads to use")
         ("rbuf,r", opts::value<int>()->default_value(30), "Size of the read buffer")
         ("wbuf,w", opts::value<int>()->default_value(30), "Size of the write buffer")
@@ -295,16 +252,12 @@ int main(int argc, char* argv[]) {
         AlignFirst = true;
     }
 
-    if (vm.count("correct-query")) {
-        dagcon::Alignment::groupByTarget = false;
-        logger.info("Configured to correct queries");
-    } else {
-        logger.info("Configured to correct targets");
-    }
-
     fopts.minCov = vm["min-coverage"].as<int>();
     fopts.minLen = vm["min-length"].as<int>();
     fopts.trim = vm["trim"].as<int>();
+
+    AlnBuf alnBuf(vm["rbuf"].as<int>());
+    CnsBuf cnsBuf(vm["wbuf"].as<int>());
 
     std::string input = vm["input"].as<std::string>(); 
     if (vm.count("threads")) {
@@ -312,9 +265,6 @@ int main(int argc, char* argv[]) {
         logger.info("Multi-threaded. Input: %s, Threads: %d", 
             input.c_str(), nthreads);
     
-        AlnBuf alnBuf(vm["rbuf"].as<int>());
-        CnsBuf cnsBuf(vm["wbuf"].as<int>());
-
         Writer writer(&cnsBuf);
         writer.setNumCnsThreads(nthreads);
         boost::thread writerThread(writer);
@@ -336,27 +286,15 @@ int main(int argc, char* argv[]) {
     
         readerThread.join();
     } else {
-        AlnProvider* ap;
-        try {
-            if (input == "-") { 
-                ap = new BlasrM5AlnProvider(&std::cin);
-            } else {
-                ap = new BlasrM5AlnProvider(input);
-            }
-            logger.info("Single-threaded. Input: %s", input.c_str());
-            alnFileConsensus(ap, fopts);
-        } 
-        catch (M5Exception::FileOpenError) {
-            logger.error("Error opening file: %s", input.c_str());
-            exit(1);
-        }
-        catch (M5Exception::FormatError err) {
-            logger.error("Format error. Input: %s, Error: %s", 
-                input.c_str(), err.msg.c_str());
-        }
-        catch (M5Exception::SortError err) {
-            logger.error("Input file is not sorted by either target or query.");
-        }
+        logger.info("Single-threaded. Input: %s", input.c_str());
+        Reader reader(&alnBuf, input, fopts.minCov);
+        reader.setNumCnsThreads(1);
+        Consensus cns(&alnBuf, &cnsBuf, fopts.minLen, fopts.minCov);
+        Writer writer(&cnsBuf);
+        writer.setNumCnsThreads(1);
+        reader();
+        cns();
+        writer();
     }
         
     return 0;

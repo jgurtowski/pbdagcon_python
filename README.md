@@ -41,15 +41,13 @@ Building
 ========
 The following are instructions on how to build the C++ pbdagcon executable.
 
-Pre-requisites
---------------
+### Pre-requisites
 * [pblibblasr](https://github.com/PacificBiosciences/pblibblasr) BLASR library
 * [boost](http://www.boost.org/) Popular C++ utility library (1.46 or 1.47) 
 * [log4cpp](http://log4cpp.sourceforge.net/) Logging library (1.0 or 1.1)
 * [gtest](http://code.google.com/p/googletest/) Google's C++ unit test Library (to build tests, at least 1.3.0)
 
-Compile/Check
--------------
+### Compile/Check
     > export BLASR=<path to pblibblasr>
     > export GTEST=<path to gtest>
 
@@ -67,27 +65,24 @@ Running
 =======
 
 ### Use Case: Generating consensus from BLASR alignments
-The most basic use case where one can generate a consensus from a set of   
+The most basic use case where one can generate a consensus from a set of 
 alignments using the pbdagcon executable directly.
 
-At the most basic level, pbdagcon takes information from BLASR alignments   
-sorted by target and generates fasta-formatted corrected target sequences.  
-The alignments from BLASR can be formatted with either *-m 4* or *-m 5*.   
-For *-m 4* format, the alignments must be run through a format adapter,   
+At the most basic level, pbdagcon takes information from BLASR alignments 
+sorted by target and generates fasta-formatted corrected target sequences.
+The alignments from BLASR can be formatted with either *-m 4* or *-m 5*. 
+For *-m 4* format, the alignments must be run through a format adapter, 
 *src/m4topre.py*, in order to generate suitable input to *pbdagcon*.
 
-See *src/cpp/pbdagcon_wf.sh* for an example way to use pbdagcon in a workflow  
-scenario using BLASR *-m 4* output (must be sorted by target).
-
-The following example shows the simplest way to generate a consensus for one  
+The following example shows the simplest way to generate a consensus for one 
 target using BLASR *-m 5* alignments as input.
 
     > blasr queries.fasta target.fasta -bestn 1 -m 5 -out mapped.m5
     > pbdagcon mapped.m5 > consensus.fasta
 
 ### Use Case: HGAP correction of PacBio reads
-Walks through how one could use pbdagcon to correct PacBio reads.  This  
-example demonstrates how correction is performed in PacBio's "Hierarchichal   
+Walks through how one could use pbdagcon to correct PacBio reads.  This 
+example demonstrates how correction is performed in PacBio's "Hierarchichal  
 Genome Assembly Process" (HGAP) workflow.  HGAP uses BLASR *-m 4* output.
 
 This example makes use of the *src/filterm4.py* and *src/m4topre.py* scripts.
@@ -101,6 +96,9 @@ This example makes use of the *src/filterm4.py* and *src/m4topre.py* scripts.
     # Finally, correct using pbdagcon, typically using multiple consensus  
     # threads.
     > pbdagcon -j 4 -a mapped.pre > corrected.fasta
+
+The *src/cpp/pbdagcon_wf.sh* script automates this workflow.
+
 
 -----------------------------------------------------------------------------
 

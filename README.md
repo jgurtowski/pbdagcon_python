@@ -56,17 +56,20 @@ Compile/Check
     # build pbdagcon executable
     > make cpp 
     > cd src/cpp
-    > ./pbdagcon --help
 
     # build and run unit tests
     > make cpp-check
 
+    # usage 
+    > ./pbdagcon --help
+
 Running
 =======
-Describes running workflows related to the C++ version only.
 
-Inputs/Outputs
---------------
+### Use Case: Generating consensus from BLASR alignments
+The most basic use case where one can generate a consensus from a set of   
+alignments using the pbdagcon executable directly.
+
 At the most basic level, pbdagcon takes information from BLASR alignments   
 sorted by target and generates fasta-formatted corrected target sequences.
 The alignments from BLASR can be formatted with either *-m 4* or *-m 5*.  For  
@@ -76,6 +79,27 @@ The alignments from BLASR can be formatted with either *-m 4* or *-m 5*.  For
 See *src/cpp/pbdagcon_wf.sh* for an example way to use pbdagcon in a workflow  
 scenario using BLASR *-m 4* output (must be sorted by target).
 
+The following example shows the simplest way to generate a consensus for one  
+target using BLASR *-m 5* alignments as input.
+
+    > blasr queries.fasta target.fasta -bestn 1 -m 5 -out mapped.m5
+    > pbdagcon -j 2 mapped.m5 > consensus.fasta
+
+### Use Case: HGAP correction of PacBio reads
+Walks through how one could use pbdagcon to correct PacBio reads.  This  
+example demonstrates how correction is performed in PacBio's "Hierarchichal   
+Genome Assembly Process" (HGAP) workflow.  HGAP uses BLASR *-m 4* output.
+
+This example makes use of the *src/filterm4.py* and *src/m4topre.py* scripts.
+
+    # First filter the m4 file to help remove chimeras
+    > filterm4.py mapped.m4 > mapped.m4.filt
+
+    # Next run the m4 adapter script, generating 'pre-alignments'
+    > m4topre.py mapped.m4.filt mapped.m4.filt reads.fasta 24 > mapped.pre
+
+    # Finally, correct using pbdagcon
+    > pbdagcon -j 2 -a mapped.pre > corrected.fasta
 
 -----------------------------------------------------------------------------
 

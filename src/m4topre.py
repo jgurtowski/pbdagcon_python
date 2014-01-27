@@ -31,18 +31,42 @@ def parseM4(rec):
 def rating(m):
     score = -int(m.score)
     alen = int(m.tend) - int(m.tstart)
-    return score+alen
+    return score + alen
 
 
 def schwartzian(rec):
     f = rec.split()
-    return (f[1], int(f[2]), rec)
+    return (f[1], float(f[2]), rec)
 
 
 def sortTargScore(recs):
     recs[:] = [schwartzian(x) for x in recs]
     recs.sort()
     recs[:] = [rec for (target, score, rec) in recs]
+
+
+def rescore(recs):
+    """Rescore alignments using coverage based statistics"""
+    prev = ""
+    cov = []
+    for idx, rec in enumerate(recs):
+        fields = rec.split()
+        m = tuplfy(fields)
+        if m.tname != prev:
+            prev = m.tname
+            cov[:] = [0] * int(m.tseqlength)
+
+        if m.tstrand:
+            start = int(m.tseqlength) - int(m.tend)
+            end = int(m.tseqlength) - int(m.tstart)
+        else:
+            start = int(m.tstart)
+            end = int(m.tend)
+
+        cov[start:end] = map(lambda x: x + 1, cov[start:end])
+        score = sum(map(lambda x: 1 / float(x), cov[start:end]))
+        fields[2] = str(-score)
+        recs[idx] = " ".join(fields)
 
 
 def bestnTrue(rec, myq):
@@ -120,6 +144,12 @@ def main():
     # sort by target name/score
     sortTargScore(myM4Recs)
 
+    # rescore based on coverage
+    rescore(myM4Recs)
+
+    # sort one more time be new score
+    sortTargScore(myM4Recs)
+
     # take a max number of alignments for each target
     limiter = AlnLimiter()
     myM4Recs[:] = [x for x in ifilter(limiter, myM4Recs)]
@@ -137,6 +167,13 @@ def main():
     # generate pre-alignments
     for rec in myM4Recs:
         m = tuplfy(rec.split())
+
+        # Bug 24538, rare case missing self hit
+        if not seqs[m.tname]:
+            msg = "Warning: skipping query %s target %s\n"
+            sys.stderr.write(msg % (m.qname, m.tname))
+            continue
+
         qs = int(m.qstart)
         qe = int(m.qend)
         qseq = seqs[m.qname][qs:qe]

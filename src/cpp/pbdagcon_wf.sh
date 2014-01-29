@@ -10,9 +10,13 @@ tmp=${tmp-"/tmp"}
 
 trap "rm -f $tmp/aln.$$.pre" EXIT SIGINT
 
-# generate pre-alignments to a tmp directory
-m4topre.py $mym4 $allm4 $subreads ${bestn-24} > $tmp/aln.$$.pre
+echo "Generating pre-alignments"
+echo "m4topre.py $mym4 $allm4 $subreads ${bestn-24} > $tmp/aln.$$.pre"
 
+# generate pre-alignments to a tmp directory
+m4topre.py $mym4 $allm4 $subreads ${bestn-24} > $tmp/aln.$$.pre || exit $?
+
+echo "Correcting reads"
 # pipe it to consensus and generate fasta
 pbdagcon -a -j ${nproc-15} $tmp/aln.$$.pre | tee ${fasta-"corrected.fa"} | \
 # generate a fastq

@@ -1,81 +1,92 @@
 #!/usr/bin/env python
+"""Super-simple converter from blasr m4 alignments to pbdagcon 'pre'
+alignments. For use in the pre-assembler dagcon workflow.
+"""
 
-# Super-simple converter from blasr m4 alignments to pbdagcon 'pre'
-# alignments. For use in the pre-assembler dagcon workflow.
 import sys
-import csv
-import string
 import heapq
+import string # pylint: disable=W0402
 from itertools import ifilter
 from collections import namedtuple, defaultdict
+import numpy as np
 from pbcore.io.FastaIO import FastaReader
 
 # qname tname score pctsimilarity qstrand qstart qend qseqlength tstrand tstart
 # ... tend tseqlength mapqv
 #
 # store only fields we need
-m4fields = [0, 1, 2, 5, 6, 8, 9, 10, 11]
-M4Record = namedtuple(
-    'M4Record', 'qname tname score qstart qend tstrand tstart tend tseqlength')
+__m4fields__ = [0, 1, 2, 5, 6, 8, 9, 10, 11]
+M4RECORD = namedtuple(
+    'M4RECORD', 'qname tname score qstart qend tstrand tstart tend tseqlength')
 
-tuplfy = M4Record._make
+__tuplfy__ = M4RECORD._make # pylint: disable=W0212
 
 # dna compliment
-rc = string.maketrans('actgACTG', 'tgacTGAC')
+__rc__ = string.maketrans('actgACTG', 'tgacTGAC')
 
 
-def parseM4(rec):
-    return [y for (x, y) in enumerate(rec.split()) if x in m4fields]
+def parse_m4(rec):
+    """Parse in the m4 file, returning a list of records"""
+    return [y for (x, y) in enumerate(rec.split()) if x in __m4fields__]
 
 
-def rating(m):
-    score = -int(m.score)
-    alen = int(m.tend) - int(m.tstart)
+def rating(rec):
+    """Rates the alignment for by length and score (revisit at some point)"""
+    score = -int(rec.score)
+    alen = int(rec.tend) - int(rec.tstart)
     return score + alen
 
 
 def schwartzian(rec):
-    f = rec.split()
-    return (f[1], float(f[2]), rec)
+    """Provides a schwartzian transform for the given record, used for 
+    sorting
+    """
+    flds = rec.split()
+    return (flds[1], float(flds[2]), rec)
 
 
-def sortTargScore(recs):
+def sort_targ_score(recs):
+    """Sorts the list in place by target id (string), then score (float)"""
     recs[:] = [schwartzian(x) for x in recs]
     recs.sort()
-    recs[:] = [rec for (target, score, rec) in recs]
+    recs[:] = [rec for (target, score, rec) in recs] # pylint: disable=W0612
 
 
 def rescore(recs):
     """Rescore alignments using coverage based statistics"""
     prev = ""
-    cov = []
+    cov = np.zeros(1)
     for idx, rec in enumerate(recs):
         fields = rec.split()
-        m = tuplfy(fields)
-        if m.tname != prev:
-            prev = m.tname
-            cov[:] = [0] * int(m.tseqlength)
+        rec = __tuplfy__(fields)
+        if rec.tname != prev:
+            prev = rec.tname
+            cov = np.zeros(int(rec.tseqlength), dtype=np.float16)
 
-        if m.tstrand:
-            start = int(m.tseqlength) - int(m.tend)
-            end = int(m.tseqlength) - int(m.tstart)
+        if rec.tstrand:
+            start = int(rec.tseqlength) - int(rec.tend)
+            end = int(rec.tseqlength) - int(rec.tstart)
         else:
-            start = int(m.tstart)
-            end = int(m.tend)
+            start = int(rec.tstart)
+            end = int(rec.tend)
 
-        cov[start:end] = map(lambda x: x + 1, cov[start:end])
-        score = sum(map(lambda x: 1 / float(x), cov[start:end]))
+        cov[start:end] += 1
+        score = np.sum(1/cov[start:end])
         fields[2] = str(-score)
         recs[idx] = " ".join(fields)
 
 
-def bestnTrue(rec, myq):
-    m = tuplfy(rec.split())
-    r = rating(m)
-    return r in myq[m.qname[32:]].top
+def bestn_true(recstr, myq):
+    """Checks if the record falls inside bestn (used when blasr is chunked)"""
+    rec = __tuplfy__(recstr.split())
+    rate = rating(rec)
+    return rate in myq[rec.qname[32:]].top
 
 
-class AlnLimiter(object):
+class AlnLimiter(object): # pylint: disable=R0903
+    """Functor that returns alignments until some count is reached. Alignments
+    should be sorted. 
+    """
     def __init__(self, limit=76):
         self.count = 0
         self.target = ''
@@ -90,7 +101,8 @@ class AlnLimiter(object):
         return self.count < self.limit
 
 
-class TopAlignments(object):
+class TopAlignments(object): # pylint: disable=R0903
+    """Tracks the top alignments for a given query, used for bestn calc"""
     bestn = 10
 
     def __init__(self):
@@ -100,93 +112,97 @@ class TopAlignments(object):
         return  # noop
 
     def add(self, aln):
+        """Adds an alignment to a bounded list, kicking out another if 
+        necessary
+        """
         heapq.heappushpop(self.top, aln)
 
 
-def main():
-    myM4 = sys.argv[1]
-    allM4 = sys.argv[2]
+def main(): # pylint: disable=R0914
+    """Drives the program"""
+    mym4 = sys.argv[1]
+    allm4 = sys.argv[2]
     reads = sys.argv[3]
     TopAlignments.bestn = int(sys.argv[4])
 
     # tracks bestn
-    myQueries = defaultdict(TopAlignments)
-    myM4Recs = []
+    my_queries = defaultdict(TopAlignments)
+    my_m4recs = []
 
     # load my m4 chunk
-    myM4Hndl = open(myM4)
-    recAdd = myM4Recs.append
-    for rec in myM4Hndl:
-        p = parseM4(rec)
-        m = tuplfy(p)
-        r = rating(m)
-        myQueries[m.qname[32:]].add(r)
-        recAdd(' '.join(p))
+    m4h = open(mym4)
+    rec_add = my_m4recs.append
+    for line in m4h:
+        flds = parse_m4(line)
+        rec = __tuplfy__(flds)
+        rate = rating(rec)
+        my_queries[rec.qname[32:]].add(rate)
+        rec_add(' '.join(flds))
 
-    myM4Hndl.close()
+    m4h.close()
 
     # if we're chunked locate relevant alignments
-    if myM4 != allM4:
+    if mym4 != allm4:
         # assuming fofn here
-        m4files = [x.rstrip() for x in open(allM4) if x.rstrip() != myM4]
-        for m4 in m4files:
-            m4Hndl = open(m4)
-            for rec in m4Hndl:
-                m = tuplfy(parseM4(rec))
-                if m.qname[32:] in myQueries:
-                    r = rating(m)
-                    myQueries[m.qname[32:]].add(r)
-            m4Hndl.close()
+        m4files = [x.rstrip() for x in open(allm4) if x.rstrip() != mym4]
+        for m4f in m4files:
+            m4h = open(m4f)
+            for recstr in m4h:
+                rec = __tuplfy__(parse_m4(recstr))
+                if rec.qname[32:] in my_queries:
+                    rate = rating(rec)
+                    my_queries[rec.qname[32:]].add(rate)
+            m4h.close()
 
         # remove alignments that fall outside of bestn
-        myM4Recs[:] = [x for x in myM4Recs if bestnTrue(x, myQueries)]
+        my_m4recs[:] = [x for x in my_m4recs if bestn_true(x, my_queries)]
 
     # sort by target name/score
-    sortTargScore(myM4Recs)
+    sort_targ_score(my_m4recs)
 
     # rescore based on coverage
-    rescore(myM4Recs)
+    rescore(my_m4recs)
 
     # sort one more time be new score
-    sortTargScore(myM4Recs)
+    sort_targ_score(my_m4recs)
 
     # take a max number of alignments for each target
     limiter = AlnLimiter()
-    myM4Recs[:] = [x for x in ifilter(limiter, myM4Recs)]
+    my_m4recs[:] = [x for x in ifilter(limiter, my_m4recs)]
 
     # load only related sequences
     seqs = {}
-    f = FastaReader(reads)
-    for e in f:
-        if e.name[32:] in myQueries:
-            seqs[e.name] = e.sequence
+    frea = FastaReader(reads)
+    for fent in frea:
+        if fent.name[32:] in my_queries:
+            seqs[fent.name] = fent.sequence
 
     # may or may not help
-    del myQueries
+    del my_queries
 
     # generate pre-alignments
-    for rec in myM4Recs:
-        m = tuplfy(rec.split())
+    for recstr in my_m4recs:
+        rec = __tuplfy__(recstr.split())
 
         # Bug 24538, rare case missing self hit
-        if not seqs[m.tname]:
+        if not seqs[rec.tname]:
             msg = "Warning: skipping query %s target %s\n"
-            sys.stderr.write(msg % (m.qname, m.tname))
+            sys.stderr.write(msg % (rec.qname, rec.tname))
             continue
 
-        qs = int(m.qstart)
-        qe = int(m.qend)
-        qseq = seqs[m.qname][qs:qe]
-        strand = '-' if m.tstrand == '1' else '+'
-        ts = int(m.tstart)
-        te = int(m.tend)
+        qst = int(rec.qstart)
+        qnd = int(rec.qend)
+        qseq = seqs[rec.qname][qst:qnd]
+        strand = '-' if rec.tstrand == '1' else '+'
+        tst = int(rec.tstart)
+        tnd = int(rec.tend)
         if strand == '+':
-            tseq = seqs[m.tname][ts:te]
+            tseq = seqs[rec.tname][tst:tnd]
         else:
-            tseq = seqs[m.tname].translate(rc)[::-1][ts:te]
+            tseq = seqs[rec.tname].translate(__rc__)[::-1][tst:tnd]
 
-        print ' '.join([m.qname, m.tname, strand,
-                       m.tseqlength, str(ts), str(te), qseq, tseq])
+        print ' '.join([rec.qname, rec.tname, strand,
+                       rec.tseqlength, str(tst), str(tnd), qseq, tseq])
 
 if __name__ == '__main__':
     sys.exit(main())

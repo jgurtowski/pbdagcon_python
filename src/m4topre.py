@@ -185,7 +185,7 @@ def main(): # pylint: disable=R0914
         rec = __tuplfy__(recstr.split())
 
         # Bug 24538, rare case missing self hit
-        if not seqs[rec.tname]:
+        if rec.tname not in seqs:
             msg = "Warning: skipping query %s target %s\n"
             sys.stderr.write(msg % (rec.qname, rec.tname))
             continue

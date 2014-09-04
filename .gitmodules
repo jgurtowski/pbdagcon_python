@@ -1,0 +1,6 @@
+[submodule "alignment"]
+	path = alignment
+	url = https://github.com/pbjd/alignment.git
+[submodule "pbdata"]
+	path = pbdata
+	url = https://github.com/pbjd/pbdata.git

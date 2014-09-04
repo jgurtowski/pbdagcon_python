@@ -12,7 +12,7 @@
 /// Implemented using the boost graph library.
 
 // forward declaration 
-struct Alignment;
+//struct Alignment;
 
 // this allows me to forward-declare properties with graph descriptors as
 // members types 

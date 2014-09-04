@@ -24,7 +24,7 @@ SRCS := $(SRCDIR)/AlnGraphBoost.cpp \
 		SimpleAlignerTest.cpp
 
 OBJS := $(SRCS:.cpp=.o)
-LIBS := -lblasr -llog4cpp -lpthread 
+LIBS := -lpbdata -lblasr -llog4cpp -lpthread 
 
 all : check
 

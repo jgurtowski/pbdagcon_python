@@ -18,7 +18,7 @@ m4topre.py $mym4 $allm4 $subreads ${bestn-24} > $tmp/aln.$$.pre || exit $?
 
 echo "Correcting reads"
 # pipe it to consensus and generate fasta
-pbdagcon -a -j ${nproc-15} $tmp/aln.$$.pre | tee ${fasta-"corrected.fa"} | \
+pbdagcon -c ${cov-8} -a -j ${nproc-15} $tmp/aln.$$.pre | tee ${fasta-"corrected.fa"} | \
 # generate a fastq
 awk '{if($0~/>/){sub(/>/,"@",$0);print;}else{l=length($0);q="";while(l--){q=q "9"}printf("%s\n+\n%s\n",$0,q)}}' > ${fastq-"corrected.fq"}
 

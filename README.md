@@ -39,10 +39,10 @@ move around a bit.  The new C++ code has been placed in *cpp/* subdirectories.
 
 Building
 ========
-The following are instructions on how to build the C++ pbdagcon executable.
+The following are instructions on how to build the C++ pbdagcon executable. Note 
+that some PBI-related build dependencies have been embeded within this project.
 
 ### Pre-requisites
-* [pblibblasr](https://github.com/PacificBiosciences/pblibblasr) BLASR library
 * [boost](http://www.boost.org/) Popular C++ utility library (1.46 or 1.47) 
 * [log4cpp](http://log4cpp.sourceforge.net/) Logging library (1.0 or 1.1)
 * [gtest](http://code.google.com/p/googletest/) Google's C++ unit test Library (to build tests, at least 1.3.0)

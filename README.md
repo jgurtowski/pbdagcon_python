@@ -48,15 +48,12 @@ that some PBI-related build dependencies have been embeded within this project.
 * [gtest](http://code.google.com/p/googletest/) Google's C++ unit test Library (to build tests, at least 1.3.0)
 
 ### Compile/Check
-    > export BLASR=<path to pblibblasr>
-    > export GTEST=<path to gtest>
+    # build and run unit tests
+    > make test
 
     # build pbdagcon executable
-    > make cpp 
+    > make
     > cd src/cpp
-
-    # build and run unit tests
-    > make cpp-check
 
     # usage 
     > ./pbdagcon --help

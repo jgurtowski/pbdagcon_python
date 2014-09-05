@@ -40,7 +40,32 @@ move around a bit.  The new C++ code has been placed in *cpp/* subdirectories.
 Building
 ========
 The following are instructions on how to build the C++ pbdagcon executable. Note 
-that some PBI-related build dependencies have been embeded within this project.
+that some PBI-related build dependencies have been embeded within this project. After
+cloning the repository you must update the alignment and pbdata submodules referenced 
+in the project. 
+
+    # first register the submodules within the pbdagcon project
+    > git submodule init
+    Submodule 'alignment' (https://github.com/pbjd/alignment.git) registered for path 'alignment'
+    Submodule 'pbdata' (https://github.com/pbjd/pbdata.git) registered for path 'pbdata'
+
+    # this actually clones the modules into your workspace
+    > git submodule update
+    Cloning into 'alignment'...
+    remote: Counting objects: 249, done.
+    remote: Compressing objects: 100% (120/120), done.
+    remote: Total 249 (delta 130), reused 244 (delta 127)
+    Receiving objects: 100% (249/249), 1.08 MiB | 639 KiB/s, done.
+    Resolving deltas: 100% (130/130), done.
+    Submodule path 'alignment': checked out 'f393f6977f4900b1eeb395717aa85c43850108af'
+    Cloning into 'pbdata'...
+    remote: Counting objects: 137, done.
+    remote: Compressing objects: 100% (71/71), done.
+    remote: Total 137 (delta 66), reused 134 (delta 66)
+    Receiving objects: 100% (137/137), 84.30 KiB, done.
+    Resolving deltas: 100% (66/66), done.
+    Submodule path 'pbdata': checked out '8f710746f0fc04ed31948c1aefe055301dfc9ddb'
+    
 
 ### Pre-requisites
 * [boost](http://www.boost.org/) Popular C++ utility library (1.46 or 1.47) 

@@ -1,3 +1,7 @@
+Fork of old pbdagcon with python libraries for use with nanocorr
+
+
+
 What is pbdagcon?
 =================
 
